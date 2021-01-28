@@ -1,15 +1,21 @@
 /*----------------------------------------------------------------------------/
-/ TJpgDec - Tiny JPEG Decompressor include file               (C)ChaN, 2011
+/ TJpgDec - Tiny JPEG Decompressor include file               (C)ChaN, 2012
 /----------------------------------------------------------------------------*/
-
+#ifndef _TJPGDEC
+#define _TJPGDEC
+/*---------------------------------------------------------------------------*/
 /* System Configurations */
 
-#define	JD_SZBUF		512	/* Size of stream input buffer (should be multiple of 512) */
-#define JD_FORMAT		0	/* Output RGB format 0:RGB888 (3 BYTE/pix), 1:RGB565 (1 WORD/pix) */
+#define	JD_SZBUF		512	/* Size of stream input buffer */
+#define JD_FORMAT		0	/* Output pixel format 0:RGB888 (3 BYTE/pix), 1:RGB565 (1 WORD/pix) */
 #define	JD_USE_SCALE	1	/* Use descaling feature for output */
-
+#define JD_TBLCLIP		1	/* Use table for saturation (might be a bit faster but increases 1K bytes of code size) */
 
 /*---------------------------------------------------------------------------*/
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "integer.h"
 
@@ -28,9 +34,12 @@ typedef enum {
 } JRESULT;
 
 
+
+/* Rectangular structure */
 typedef struct {
 	WORD left, right, top, bottom;
 } JRECT;
+
 
 
 /* Decompressor object structure */
@@ -55,12 +64,8 @@ struct JDEC {
 	void* pool;				/* Pointer to available memory pool */
 	UINT sz_pool;			/* Size of momory pool (bytes available) */
 	UINT (*infunc)(JDEC*, BYTE*, UINT);/* Pointer to jpeg stream input function */
-	UINT (*outfunc)(JDEC*, void*, JRECT*);	/* Pointer to RGB output function */
 	void* device;			/* Pointer to I/O device identifiler for the session */
 };
-
-
-#define	LDB_WORD(ptr)		(WORD)(((WORD)*((BYTE*)(ptr))<<8)|(WORD)*(BYTE*)((ptr)+1))
 
 
 
@@ -68,3 +73,9 @@ struct JDEC {
 JRESULT jd_prepare (JDEC*, UINT(*)(JDEC*,BYTE*,UINT), void*, UINT, void*);
 JRESULT jd_decomp (JDEC*, UINT(*)(JDEC*,void*,JRECT*), BYTE);
 
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _TJPGDEC */

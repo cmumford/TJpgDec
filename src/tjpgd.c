@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------/
-/ TJpgDec - Tiny JPEG Decompressor R0.01a                     (C)ChaN, 2012
+/ TJpgDec - Tiny JPEG Decompressor R0.01b                     (C)ChaN, 2012
 /-----------------------------------------------------------------------------/
 / The TJpgDec is a generic JPEG decompressor module for tiny embedded systems.
 / This is a free software that opened for education, research and commercial
@@ -15,6 +15,7 @@
 /-----------------------------------------------------------------------------/
 / Oct 04,'11 R0.01  First release.
 / Feb 19,'12 R0.01a Fixed decompression fails when scan starts with an escape seq.
+/ Sep 03,'12 R0.01b Added JD_TBLCLIP option.
 /----------------------------------------------------------------------------*/
 
 #include "tjpgd.h"
@@ -61,6 +62,8 @@ const WORD Ipsf[64] = {	/* See also aa_idct.png */
 /* Conversion table for fast clipping process  */
 /*---------------------------------------------*/
 
+#if JD_TBLCLIP
+
 #define BYTECLIP(v) Clip8[(UINT)(v) & 0x3FF]
 
 static
@@ -103,6 +106,20 @@ const BYTE Clip8[1024] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
+#else	/* JD_TBLCLIP */
+
+inline
+BYTE BYTECLIP (
+	INT val
+)
+{
+	if (val < 0) val = 0;
+	if (val > 255) val = 255;
+
+	return (BYTE)val;
+}
+
+#endif
 
 
 
@@ -249,14 +266,14 @@ INT bitext (	/* >=0: extracted data, <0: error code */
 			if (!dc) {			/* No input data is available, re-fill input buffer */
 				dp = jd->inbuf;	/* Top of input buffer */
 				dc = jd->infunc(jd, dp, JD_SZBUF);
-				if (!dc) return 0 - JDR_INP;	/* Err: read error or wrong stream termination */
+				if (!dc) return 0 - (INT)JDR_INP;	/* Err: read error or wrong stream termination */
 			} else {
 				dp++;			/* Next data ptr */
 			}
 			dc--;				/* Decrement number of available bytes */
 			if (f) {			/* In flag sequence? */
 				f = 0;			/* Exit flag sequence */
-				if (*dp != 0) return 0 - JDR_FMT1;	/* Err: unexpected flag is detected (may be collapted data) */
+				if (*dp != 0) return 0 - (INT)JDR_FMT1;	/* Err: unexpected flag is detected (may be collapted data) */
 				*dp = s = 0xFF;			/* The flag is a data 0xFF */
 			} else {
 				s = *dp;				/* Get next data byte */
@@ -303,7 +320,7 @@ INT huffext (			/* >=0: decoded data, <0: error code */
 			if (!dc) {	/* No input data is available, re-fill input buffer */
 				dp = jd->inbuf;	/* Top of input buffer */
 				dc = jd->infunc(jd, dp, JD_SZBUF);
-				if (!dc) return 0 - JDR_INP;	/* Err: read error or wrong stream termination */
+				if (!dc) return 0 - (INT)JDR_INP;	/* Err: read error or wrong stream termination */
 			} else {
 				dp++;	/* Next data ptr */
 			}
@@ -311,7 +328,7 @@ INT huffext (			/* >=0: decoded data, <0: error code */
 			if (f) {		/* In flag sequence? */
 				f = 0;		/* Exit flag sequence */
 				if (*dp != 0)
-					return 0 - JDR_FMT1;/* Err: unexpected flag is detected (may be collapted data) */
+					return 0 - (INT)JDR_FMT1;	/* Err: unexpected flag is detected (may be collapted data) */
 				*dp = s = 0xFF;			/* The flag is a data 0xFF */
 			} else {
 				s = *dp;				/* Get next data byte */
@@ -335,7 +352,7 @@ INT huffext (			/* >=0: decoded data, <0: error code */
 		bl--;
 	} while (bl);
 
-	return 0 - JDR_FMT1;	/* Err: code not found (may be collapted data) */
+	return 0 - (INT)JDR_FMT1;	/* Err: code not found (may be collapted data) */
 }
 
 
@@ -937,7 +954,7 @@ JRESULT jd_decomp (
 				if (rc != JDR_OK) return rc;
 				rst = 1;
 			}
-			rc = mcu_load(jd);					/* Load an MCU (decompress huffman coded stream and IDCT) */
+			rc = mcu_load(jd);					/* Load an MCU (decompress huffman coded stream and apply IDCT) */
 			if (rc != JDR_OK) return rc;
 			rc = mcu_output(jd, outfunc, x, y);	/* Output the MCU (color space conversion, scaling and output) */
 			if (rc != JDR_OK) return rc;
