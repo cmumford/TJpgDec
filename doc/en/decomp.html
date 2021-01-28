@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta http-equiv="Content-Style-Type" content="text/css">
 <link rel="up" title="TJpgDec" href="../00index.html">
 <link rel="stylesheet" href="../css_e.css" type="text/css" media="screen" title="ELM Default">
@@ -16,8 +16,8 @@
 <pre>
 JRESULT jd_decomp (
   JDEC* <em>jdec</em>,             <span class="c">/* Pointer to valid decompressor object */</span>
-  UINT(*<em>outfunc</em>)(JDEC*,void*,JRECT*), <span class="c">/* Pointer to output function */</span>
-  BYTE <em>scale</em>              <span class="c">/* Scaling factor */</span>
+  uint16_t(*<em>outfunc</em>)(JDEC*,void*,JRECT*), <span class="c">/* Pointer to output function */</span>
+  uint8_t <em>scale</em>           <span class="c">/* Scaling factor */</span>
 );
 </pre>
 </div>

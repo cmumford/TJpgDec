@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta http-equiv="Content-Style-Type" content="text/css">
 <link rel="up" title="FatFs" href="../00index.html">
 <link rel="stylesheet" href="../css_e.css" type="text/css" media="screen" title="ELM Default">
@@ -47,9 +47,9 @@
 
 <span class="c">/* User defined device identifier */</span>
 <span class="k">typedef struct</span> {
-    FILE *fp;      <span class="c">/* File pointer for input function */</span>
-    BYTE *fbuf;    <span class="c">/* Pointer to the frame buffer for output function */</span>
-    UINT wfbuf;    <span class="c">/* Width of the frame buffer [pix] */</span>
+    FILE *fp;          <span class="c">/* File pointer for input function */</span>
+    uint8_t *fbuf;     <span class="c">/* Pointer to the frame buffer for output function */</span>
+    uint16_t wfbuf;    <span class="c">/* Width of the frame buffer [pix] */</span>
 } IODEV;
 
 
@@ -57,14 +57,14 @@
 <span class="c">/* User defined input funciton  */</span>
 <span class="c">/*------------------------------*/</span>
 
-UINT in_func (JDEC* jd, BYTE* buff, UINT nbyte)
+uint16_t in_func (JDEC* jd, uint8_t* buff, uint16_t nbyte)
 {
     IODEV *dev = (IODEV*)jd-&gt;device;   <span class="c">/* Device identifier for the session (5th argument of jd_prepare function) */</span>
 
 
     if (buff) {
         <span class="c">/* Read bytes from input stream */</span>
-        return (UINT)fread(buff, 1, nbyte, dev-&gt;fp);
+        return (uint16_t)fread(buff, 1, nbyte, dev-&gt;fp);
     } else {
         <span class="c">/* Remove bytes from input stream */</span>
         return fseek(dev-&gt;fp, nbyte, SEEK_CUR) ? 0 : nbyte;
@@ -76,11 +76,11 @@ UINT in_func (JDEC* jd, BYTE* buff, UINT nbyte)
 <span class="c">/* User defined output funciton */</span>
 <span class="c">/*------------------------------*/</span>
 
-UINT out_func (JDEC* jd, void* bitmap, JRECT* rect)
+uint16_t out_func (JDEC* jd, void* bitmap, JRECT* rect)
 {
     IODEV *dev = (IODEV*)jd-&gt;device;
-    BYTE *src, *dst;
-    UINT y, bws, bwd;
+    uint8_t *src, *dst;
+    uint16_t y, bws, bwd;
 
 
     <span class="c">/* Put progress indicator */</span>
@@ -89,7 +89,7 @@ UINT out_func (JDEC* jd, void* bitmap, JRECT* rect)
     }
 
     <span class="c">/* Copy the decompressed RGB rectanglar to the frame buffer (assuming RGB888 cfg) */</span>
-    src = (BYTE*)bitmap;
+    src = (uint8_t*)bitmap;
     dst = dev-&gt;fbuf + 3 * (rect-&gt;top * dev-&gt;wfbuf + rect-&gt;left);  <span class="c">/* Left-top of destination rectangular */</span>
     bws = 3 * (rect-&gt;right - rect-&gt;left + 1);     <span class="c">/* Width of source rectangular [byte] */</span>
     bwd = 3 * dev-&gt;wfbuf;                         <span class="c">/* Width of frame buffer [byte] */</span>
@@ -167,7 +167,7 @@ int main (int argc, char* argv[])
 
 <div class="para" id="memory">
 <h3>Memory Usage</h3>
-<p>These are the memory usage of some platforms at default configuration. All compilations are optimized in code size.</p>
+<p>These are the memory usage of some platforms at default configuration. Each compilations are optimized in code size.</p>
 <table class="lst2">
 <tr><th></th><th>AVR</th><th>PIC24</th><th>CM0</th><th>IA-32</th></tr>
 <tr><td>Compiler</td><td>GCC</td><td>C30</td><td>GCC</td><td>VC6</td></tr>

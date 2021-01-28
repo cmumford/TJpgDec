@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta http-equiv="Content-Style-Type" content="text/css">
 <link rel="up" title="TJpgDec" href="../00index.html">
 <link rel="stylesheet" href="../css_e.css" type="text/css" media="screen" title="ELM Default">
@@ -14,10 +14,10 @@
 <h2>Input Function</h2>
 <p>User defined input function to read data from input stream.</p>
 <pre>
-UINT in_func (
-  JDEC* <em>jdec</em>,    <span class="c">/* Pointer to the decompression object */</span>
-  BYTE* <em>buff</em>,    <span class="c">/* Pointer to buffer to store the read data */</span>
-  UINT <em>ndata</em>     <span class="c">/* Number of bytes to read */</span>
+uint16_t in_func (
+  JDEC* <em>jdec</em>,       <span class="c">/* Pointer to the decompression object */</span>
+  uint8_t* <em>buff</em>,    <span class="c">/* Pointer to buffer to store the read data */</span>
+  uint16_t <em>ndata</em>    <span class="c">/* Number of bytes to read */</span>
 );
 </pre>
 </div>
@@ -28,7 +28,7 @@ UINT in_func (
 <dt>jdec</dt>
 <dd>Specifies the decompression object of the decompression session.</dd>
 <dt>buff</dt>
-<dd>Specifies the pointer to the read buffer to store the read data. A NULL specifies to remove the data from input stream.</dd>
+<dd>Specifies the pointer to the read buffer to store the read data. A null specifies to remove the data from input stream.</dd>
 <dt>ndata</dt>
 <dd>Specifies number of bytes to read/remove from the input stream.</dd>
 </dl>

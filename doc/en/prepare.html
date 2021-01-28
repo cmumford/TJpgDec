@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta http-equiv="Content-Style-Type" content="text/css">
 <link rel="up" title="TJpgDec" href="../00index.html">
 <link rel="stylesheet" href="../css_e.css" type="text/css" media="screen" title="ELM Default">
@@ -16,9 +16,9 @@
 <pre>
 JRESULT jd_prepare (
   JDEC* <em>jdec</em>,            <span class="c">/* Pointer to blank decompression object */</span>
-  UINT(*<em>infunc</em>)(JDEC*,BYTE*,UINT), <span class="c">/* Pointer to input function */</span>
+  uint16_t(*<em>infunc</em>)(JDEC*,uint8_t*,uint16_t), <span class="c">/* Pointer to input function */</span>
   void* <em>work</em>,            <span class="c">/* Pointer to work area */</span>
-  UINT <em>sz_work</em>,          <span class="c">/* Size of the work area */</span>
+  uint16_t <em>sz_work</em>,      <span class="c">/* Size of the work area */</span>
   void* <em>device</em>           <span class="c">/* Device identifier for the session */</span>
 );
 </pre>
@@ -34,7 +34,7 @@ JRESULT jd_prepare (
 <dt>work</dt>
 <dd>Specifies pointer to the work area for this session. It should be aligned to word boundary or it can result an exception.</dd>
 <dt>sz_work</dt>
-<dd>Specifies size of the work area in unit of byte. TJpgDec requires upto 3092 bytes of work area depends on the built-in parameter tables of the JPEG image. Thus 3092 bytes of work area is suffcient for most case.</dd>
+<dd>Specifies size of the work area in unit of byte. TJpgDec requires upto 3092 bytes of work area depends on the built-in parameter tables of the JPEG image to deccompress.</dd>
 <dt>device</dt>
 <dd>Specifies pointer to the user defined device identifier for this session. It is stored to the member <tt>device</tt> in the decompression object. It can be refered by I/O functions to identify the current session. When I/O device is fixed in the project or this feature is not needed, set NULL and do not care about this.</dd>
 </dl>
