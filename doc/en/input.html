@@ -14,11 +14,12 @@
 <h2>Input Function</h2>
 <p>User defined input function to read data from input stream.</p>
 <pre>
-uint16_t in_func (
+unsigned int in_func (
   JDEC* <em>jdec</em>,       <span class="c">/* Pointer to the decompression object */</span>
   uint8_t* <em>buff</em>,    <span class="c">/* Pointer to buffer to store the read data */</span>
-  uint16_t <em>ndata</em>    <span class="c">/* Number of bytes to read */</span>
+  unsigned int <em>ndata</em>     <span class="c">/* Number of bytes to read */</span>
 );
+
 </pre>
 </div>
 
@@ -37,7 +38,7 @@ uint16_t in_func (
 
 <div class="para ret">
 <h4>Return Values</h4>
-<p>Returns number of bytes read/removed. When a zero is returned, the jd_prepare and jd_decomp function aborts with JDR_INP.</p>
+<p>Returns number of bytes read/removed. When a zero is returned, the jd_prepare() and jd_decomp() function aborts with JDR_INP.</p>
 </div>
 
 

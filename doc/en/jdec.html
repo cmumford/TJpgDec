@@ -16,7 +16,7 @@
 <pre>
 <span class="k">typedef</span> <span class="k">struct</span> JDEC JDEC;
 <span class="k">struct</span> JDEC {
-    uint16_t dctr;               <span class="c">/* Number of bytes available in the input buffer */</span>
+    unsigned int dctr;           <span class="c">/* Number of bytes available in the input buffer */</span>
     uint8_t* dptr;               <span class="c">/* Current data read ptr */</span>
     uint8_t* inbuf;              <span class="c">/* Bit stream input buffer */</span>
     uint8_t dmsk;                <span class="c">/* Current bit in the current read byte */</span>
@@ -33,9 +33,9 @@
     void* workbuf;               <span class="c">/* Working buffer for IDCT and RGB output */</span>
     uint8_t* mcubuf;             <span class="c">/* Working buffer for the MCU */</span>
     void* pool;                  <span class="c">/* Pointer to available memory pool */</span>
-    uint16_t sz_pool;            <span class="c">/* Size of momory pool (bytes available) */</span>
-    uint16_t (*infunc)(JDEC*, uint8_t*, uint16_t);    <span class="c">/* Pointer to jpeg stream input function */</span>
-    uint16_t (*outfunc)(JDEC*, void*, JRECT*); <span class="c">/* Pointer to RGB output function */</span>
+    unsigned int sz_pool;        <span class="c">/* Size of momory pool (bytes available) */</span>
+    unsigned int (*infunc)(JDEC*, uint8_t*, uint_fast16_t);    <span class="c">/* Pointer to jpeg stream input function */</span>
+    int (*outfunc)(JDEC*, void*, JRECT*); <span class="c">/* Pointer to RGB output function */</span>
     void* device;                <span class="c">/* Pointer to I/O device identifiler for the session */</span>
 };
 </pre>

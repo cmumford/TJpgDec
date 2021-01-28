@@ -47,9 +47,9 @@
 
 <span class="c">/* User defined device identifier */</span>
 <span class="k">typedef struct</span> {
-    FILE *fp;          <span class="c">/* File pointer for input function */</span>
-    uint8_t *fbuf;     <span class="c">/* Pointer to the frame buffer for output function */</span>
-    uint16_t wfbuf;    <span class="c">/* Width of the frame buffer [pix] */</span>
+    FILE *fp;               <span class="c">/* File pointer for input function */</span>
+    uint8_t *fbuf;          <span class="c">/* Pointer to the frame buffer for output function */</span>
+    unsigned int wfbuf;     <span class="c">/* Width of the frame buffer [pix] */</span>
 } IODEV;
 
 
@@ -57,16 +57,18 @@
 <span class="c">/* User defined input funciton  */</span>
 <span class="c">/*------------------------------*/</span>
 
-uint16_t in_func (JDEC* jd, uint8_t* buff, uint16_t nbyte)
+unsigned int in_func (  <span class="c">/* Returns number of bytes read (zero on error) */</span>
+    JDEC* jd,           <span class="c">/* Decompression object */</span>
+    uint8_t* buff,      <span class="c">/* Pointer to the read buffer (null to remove data) */</span>
+    unsigned int nbyte  <span class="c">/* Number of bytes to read/remove */</span>
+)
 {
     IODEV *dev = (IODEV*)jd-&gt;device;   <span class="c">/* Device identifier for the session (5th argument of jd_prepare function) */</span>
 
 
-    if (buff) {
-        <span class="c">/* Read bytes from input stream */</span>
-        return (uint16_t)fread(buff, 1, nbyte, dev-&gt;fp);
-    } else {
-        <span class="c">/* Remove bytes from input stream */</span>
+    if (buff) { <span class="c">/* Raad data from imput stream */</span>
+        return (unsigned int)fread(buff, 1, nbyte, dev-&gt;fp);
+    } else {    <span class="c">/* Remove data from input stream */</span>
         return fseek(dev-&gt;fp, nbyte, SEEK_CUR) ? 0 : nbyte;
     }
 }
@@ -76,7 +78,11 @@ uint16_t in_func (JDEC* jd, uint8_t* buff, uint16_t nbyte)
 <span class="c">/* User defined output funciton */</span>
 <span class="c">/*------------------------------*/</span>
 
-uint16_t out_func (JDEC* jd, void* bitmap, JRECT* rect)
+int out_func (      <span class="c">/* 1:Ok, 0:Aborted */</span>
+    JDEC* jd,       <span class="c">/* Decompression object */</span>
+    void* bitmap,   <span class="c">/* Bitmap data to be output */</span>
+    JRECT* rect     <span class="c">/* Rectangular region of output image */</span>
+)
 {
     IODEV *dev = (IODEV*)jd-&gt;device;
     uint8_t *src, *dst;
@@ -108,41 +114,40 @@ uint16_t out_func (JDEC* jd, void* bitmap, JRECT* rect)
 
 int main (int argc, char* argv[])
 {
-    void *work;       <span class="c">/* Pointer to the decompressor work area */</span>
-    JDEC jdec;        <span class="c">/* Decompression object */</span>
     JRESULT res;      <span class="c">/* Result code of TJpgDec API */</span>
+    JDEC jdec;        <span class="c">/* Decompression object */</span>
+    void *work = (void*)malloc(3100);  <span class="c">/* Pointer to the work area */</span>
     IODEV devid;      <span class="c">/* User defined device identifier */</span>
 
-    <span class="c">/* Open a JPEG file */</span>
+
+    <span class="c">/* Initialize input stream */</span>
     if (argc &lt; 2) return -1;
     devid.fp = fopen(argv[1], "rb");
     if (!devid.fp) return -1;
 
-    <span class="c">/* Allocate a work area for TJpgDec */</span>
-    work = malloc(3100);
-
     <span class="c">/* Prepare to decompress */</span>
     res = jd_prepare(&amp;jdec, in_func, work, 3100, &amp;devid);
     if (res == JDR_OK) {
-        <span class="c">/* Ready to dcompress. Image info is available here. */</span>
-        printf("Image dimensions: %u by %u. %u bytes used.\n", jdec.width, jdec.height, 3100 - jdec.sz_pool);
+        <span class="c">/* It is ready to dcompress and image info is available here */</span>
+        printf("Image size is %u x %u.\n%u bytes of work ares is used.\n", jdec.width, jdec.height, 3100 - jdec.sz_pool);
 
-        devid.fbuf = malloc(3 * jdec.width * jdec.height); <span class="c">/* Frame buffer for output image (assuming RGB888 cfg) */</span>
+        <span class="c">/* Initialize output device */</span>
+        devid.fbuf = (uint8_t*)malloc(3 * jdec.width * jdec.height); <span class="c">/* Create frame buffer for output image (assuming RGB888 cfg) */</span>
         devid.wfbuf = jdec.width;
 
         res = jd_decomp(&amp;jdec, out_func, 0);   <span class="c">/* Start to decompress with 1/1 scaling */</span>
         if (res == JDR_OK) {
             <span class="c">/* Decompression succeeded. You have the decompressed image in the frame buffer here. */</span>
-            printf("\rOK  \n");
+            printf("\rDecompression succeeded.\n");
 
         } else {
-            printf("Failed to decompress: rc=%d\n", res);
+            printf("Failed to decompress. (rc=%d)\n", res);
         }
 
         free(devid.fbuf);    <span class="c">/* Discard frame buffer */</span>
 
     } else {
-        printf("Failed to prepare: rc=%d\n", res);
+        printf("Failed to prepare. (rc=%d)\n", res);
     }
 
     free(work);             <span class="c">/* Discard work area */</span>
@@ -173,7 +178,7 @@ int main (int argc, char* argv[])
 <tr><td>Compiler</td><td>GCC</td><td>C30</td><td>GCC</td><td>VC6</td></tr>
 <tr class="lst3"><td>text+const</td><td>9422</td><td>6544</td><td>4536</td><td>6144</td></tr>
 </table>
-<p>As for the work area, TJpgDec requires upto 3100 bytes for most JPEG images. It exactly depends on what parameter has been used to create the JPEG image. The 3100 bytes is the maximum memory requirement at default input buffer configuration (<tt>JD_SZBUF == 512</tt>) and it varies with <tt>JD_SZBUF</tt>. The <tt>JD_SZBUF</tt> defines how many bytes read from input stream at a time. TJpgDec alignes each read request to the buffer size so that 512, 1024, 2048... byte is ideal to read from storage device.</p>
+<p>TJpgDec requires a work area upto 3100 bytes for most JPEG images. It exactly depends on what parameter has been used to create the JPEG image. The 3100 bytes is the maximum memory requirement at default input buffer configuration (<tt>JD_SZBUF == 512</tt>) and it varies with <tt>JD_SZBUF</tt>. The <tt>JD_SZBUF</tt> defines how many bytes read from input stream at a time. TJpgDec alignes each read request to the buffer size, so that 512, 1024, 2048... byte is ideal to read data from the storage device.</p>
 </div>
 
 
@@ -182,13 +187,13 @@ int main (int argc, char* argv[])
 <p>This is a copy of the TJpgDec license document that included in the source codes.</p>
 <pre>
 /*----------------------------------------------------------------------------/
-/ TJpgDec - Tiny JPEG Decompressor R0.01                       (C)ChaN, 2011
+/ TJpgDec - Tiny JPEG Decompressor R0.xx                       (C)ChaN, 20xx
 /-----------------------------------------------------------------------------/
 / The TJpgDec is a generic JPEG decompressor module for tiny embedded systems.
 / This is a free software that opened for education, research and commercial
 /  developments under license policy of following terms.
 /
-/  Copyright (C) 2011, ChaN, all right reserved.
+/  Copyright (C) 20xx, ChaN, all right reserved.
 /
 / * The TJpgDec module is a free software and there is NO WARRANTY.
 / * No restriction on use. You can use, modify and redistribute it for
@@ -196,7 +201,7 @@ int main (int argc, char* argv[])
 / * Redistributions of source code must retain the above copyright notice.
 /
 /----------------------------------------------------------------------------*/</pre>
-<p>Therefore TJpgDec license is one of the BSD-style license but there is a big difference. Because TJpgDec is for embedded projects, the conditions for redistributions in binary form, such as embedded code, hex file and binary library, are not specified to increase its usability. The documentation of the distributions need not include about TJpgDec and its license document, and it may also. Of course TJpgDec is compatible with the projects under GNU GPL. When redistribute it with any modification, the license can also be changed to GNU GPL or BSD-style license.</p>
+<p>Therefore TJpgDec license is one of the BSD-style license but there is a significant difference. Because TJpgDec is for embedded projects, the conditions for redistributions in binary form, such as embedded code, hex file and binary library, are not specified to increase its usability. The documentation of the distributions need not include about TJpgDec and its license document, and it may also. Of course TJpgDec is compatible with the projects under GNU GPL. When redistribute it with any modification, the license can also be changed to GNU GPL or BSD-style license.</p>
 </div>
 
 <p class="foot"><a href="../00index.html">Return</a></p>
