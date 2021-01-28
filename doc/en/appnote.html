@@ -21,7 +21,8 @@
 
 <div class="para" id="use">
 <h3>How to Use</h3>
-<p>This is an outline of typical usage of TJpgDec module. The decompression session is divided in two stages. The first stage is to analyze the JPEG image and the second stage is to decompress it.</p>
+<p>First of all, you should build and run the sample program shown below. This is a typical usage of TJpgDec module and it helps to narrow down the problem on debugging.</p>
+<p>The decompression session is divided in two stages. The first stage is to analyze the JPEG image and the second stage is to decompress it.</p>
 <ol>
 <li>Initialize input stream. (e.g. open a file)</li>
 <li>Allocate JPEG decompression object and work area.</li>
@@ -29,10 +30,14 @@
 <li>Initialize output device with the image info in the decompression object.</li>
 <li>Call <em>jd_decomp()</em> to decompress the JPEG image.</li>
 </ol>
+
+<h4>System Organization</h4>
+<p><img src="p1.png" width="420" height="280" alt=""></p>
+
 <h4>Example</h4>
 <pre>
 <span class="c">/*------------------------------------------------*/</span>
-<span class="c">/* Quick Evaluation Program for Generic Platforms */</span>
+<span class="c">/* TJpgDec Quick Evaluation Program for PCs       */</span>
 <span class="c">/*------------------------------------------------*/</span>
 
 <span class="k">#include</span> &lt;stdio.h&gt;
@@ -104,7 +109,7 @@ UINT out_func (JDEC* jd, void* bitmap, JRECT* rect)
 int main (int argc, char* argv[])
 {
     void *work;       <span class="c">/* Pointer to the decompressor work area */</span>
-    JDEC jdec;        <span class="c">/* Decoder object */</span>
+    JDEC jdec;        <span class="c">/* Decompression object */</span>
     JRESULT res;      <span class="c">/* Result code of TJpgDec API */</span>
     IODEV devid;      <span class="c">/* User defined device identifier */</span>
 
@@ -120,6 +125,7 @@ int main (int argc, char* argv[])
     res = jd_prepare(&amp;jdec, in_func, work, 3100, &amp;devid);
     if (res == JDR_OK) {
         <span class="c">/* Ready to dcompress. Image info is available here. */</span>
+        printf("Image dimensions: %u by %u. %u bytes used.\n", jdec.width, jdec.height, 3100 - jdec.sz_pool);
 
         devid.fbuf = malloc(3 * jdec.width * jdec.height); <span class="c">/* Frame buffer for output image (assuming RGB888 cfg) */</span>
         devid.wfbuf = jdec.width;
@@ -127,16 +133,16 @@ int main (int argc, char* argv[])
         res = jd_decomp(&amp;jdec, out_func, 0);   <span class="c">/* Start to decompress with 1/1 scaling */</span>
         if (res == JDR_OK) {
             <span class="c">/* Decompression succeeded. You have the decompressed image in the frame buffer here. */</span>
-            printf("\rOK  \n", res);
+            printf("\rOK  \n");
 
         } else {
-            printf("Failed to decompress: %d\n", res);
+            printf("Failed to decompress: rc=%d\n", res);
         }
 
         free(devid.fbuf);    <span class="c">/* Discard frame buffer */</span>
 
     } else {
-        printf("Failed to prepare: %d\n", res);
+        printf("Failed to prepare: rc=%d\n", res);
     }
 
     free(work);             <span class="c">/* Discard work area */</span>
@@ -154,20 +160,20 @@ int main (int argc, char* argv[])
 <ul>
 <li>JPEG standard: Baseline only. Progressive and Lossless JPEG format are not supported.</li>
 <li>Image size: Upto 65520 x 65520 pixels.</li>
-<li>Colorspace: YCbCr three components only. One component (monochrome) is not supported.</li>
+<li>Colorspace: YCbCr three components only. Grayscale image is not supported.</li>
 <li>Sampling factor: 4:4:4, 4:2:2 or 4:2:0.</li>
 </ul>
 </div>
 
 <div class="para" id="memory">
 <h3>Memory Usage</h3>
-<p>These are the memory usage of some platforms. All compilations are optimized in code size.</p>
+<p>These are the memory usage of some platforms at default configuration. All compilations are optimized in code size.</p>
 <table class="lst2">
 <tr><th></th><th>AVR</th><th>PIC24</th><th>CM0</th><th>IA-32</th></tr>
-<tr><td>Compiler</td><td>GCC</td><td>GCC</td><td>GCC</td><td>VC6</td></tr>
+<tr><td>Compiler</td><td>GCC</td><td>C30</td><td>GCC</td><td>VC6</td></tr>
 <tr class="lst3"><td>text+const</td><td>9422</td><td>6544</td><td>4536</td><td>6144</td></tr>
 </table>
-<p>As for the work area, TJpgDec requires upto 3100 bytes. It depends on what parameter has been used to compress the JPEG image. The 3100 bytes is the maximum memory requirement at default input buffer configuration (<tt>JD_SZBUF == 512</tt>) and it varies with <tt>JD_SZBUF</tt>. The <tt>JD_SZBUF</tt> defines how many bytes read from input stream at a time. TJpgDec alignes each read request to the buffer size so that 512, 1024, 2048... byte is ideal to read from storage device.</p>
+<p>As for the work area, TJpgDec requires upto 3100 bytes for most JPEG images. It exactly depends on what parameter has been used to create the JPEG image. The 3100 bytes is the maximum memory requirement at default input buffer configuration (<tt>JD_SZBUF == 512</tt>) and it varies with <tt>JD_SZBUF</tt>. The <tt>JD_SZBUF</tt> defines how many bytes read from input stream at a time. TJpgDec alignes each read request to the buffer size so that 512, 1024, 2048... byte is ideal to read from storage device.</p>
 </div>
 
 

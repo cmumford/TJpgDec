@@ -15,7 +15,7 @@
 <p>User defined input function to read data from input stream.</p>
 <pre>
 UINT in_func (
-  JDEC* <em>jdec</em>,    <span class="c">/* Decoder object */</span>
+  JDEC* <em>jdec</em>,    <span class="c">/* Pointer to the decompression object */</span>
   BYTE* <em>buff</em>,    <span class="c">/* Pointer to buffer to store the read data */</span>
   UINT <em>ndata</em>     <span class="c">/* Number of bytes to read */</span>
 );
@@ -28,16 +28,16 @@ UINT in_func (
 <dt>jdec</dt>
 <dd>Specifies the decompression object of the decompression session.</dd>
 <dt>buff</dt>
-<dd>Specifies the pointer to the buffer to store the read data. When a NULL is specified, the read data is discarded.</dd>
+<dd>Specifies the pointer to the read buffer to store the read data. A NULL specifies to remove the data from input stream.</dd>
 <dt>ndata</dt>
-<dd>Specifies number of bytes to read/skip from the input stream.</dd>
+<dd>Specifies number of bytes to read/remove from the input stream.</dd>
 </dl>
 </div>
 
 
 <div class="para ret">
 <h4>Return Values</h4>
-<p>Returns number of bytes read/skipped. When a 0 is returned, the jd_prepare and jd_decomp function fails with JDR_INP.</p>
+<p>Returns number of bytes read/removed. When a zero is returned, the jd_prepare and jd_decomp function aborts with JDR_INP.</p>
 </div>
 
 

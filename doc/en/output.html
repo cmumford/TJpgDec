@@ -12,10 +12,10 @@
 
 <div class="para func">
 <h2>Output Function</h2>
-<p>User defined output function to write RGB data to output device.</p>
+<p>User defined output function to write decompressed pixels to the output device.</p>
 <pre>
 UINT out_func (
-  JDEC* <em>jdec</em>,    <span class="c">/* Decompression object */</span>
+  JDEC* <em>jdec</em>,    <span class="c">/* Pointer to the decompression object */</span>
   void* <em>bitmap</em>,  <span class="c">/* RGB bitmap to be output */</span>
   JRECT* <em>rect</em>    <span class="c">/* Rectangular region to output */</span>
 );
@@ -44,8 +44,8 @@ UINT out_func (
 <div class="para desc">
 <h4>Description</h4>
 <p>This function is the data output interface of the TJpgDec module. The corresponding decompression session can be identified by the pointer to the device identifier <tt>jdec->device</tt> passed to the 5th argument of jd_prepare function.</p>
-<p>The RGB bitmap is sent to the frame buffer or display device in this function. The first pixel in the bitmap is the left-top of the rectangular, the second one is next right and last pixel is the bottom-right of the rectangular. The size of rectangular varies from 1x1 to 16x16 depends on clipping, scaling and sampling factor of the image.</p>
-<p>The RGB pixel format is defined by <tt>JD_FORMAT</tt> parameter in the configuration option. When it is configured to RGB888, the bitmap is a BYTE array holds the RGB data in 3 bytes per pixel: <tt>RRRRRRRR, GGGGGGGG, BBBBBBBB, RRRRRRRR, GGGGGGGG, BBBBBBBB, ...</tt> When it is configured to RGB565, the bitmap is a WORD array holds the RGB data in 1 word per pixel: <tt>RRRRRGGGGGGBBBBB, RRRRRGGGGGGBBBBB, RRRRRGGGGGGBBBBB, ...</tt></p>
+<p>The bitmap is sent to the frame buffer or display device in this function. The first pixel in the bitmap is the left-top of the rectangular, the second one is next right and last pixel is the bottom-right of the rectangular. The size of rectangular varies from 1x1 to 16x16 depends on clipping, scaling and sampling factor of the image. If the rectangular is out of the frame buffer, it should be clipped in this function.</p>
+<p>The pixel format is defined by <tt>JD_FORMAT</tt> parameter in the configuration option. When it is configured to RGB888, the bitmap is a BYTE array holds the RGB data in 3 bytes per pixel: <tt>RRRRRRRR, GGGGGGGG, BBBBBBBB, RRRRRRRR, GGGGGGGG, BBBBBBBB, ...</tt> When it is configured to RGB565, the bitmap is a WORD array holds the RGB data in 1 word per pixel: <tt>RRRRRGGGGGGBBBBB, RRRRRGGGGGGBBBBB, RRRRRGGGGGGBBBBB, ...</tt></p>
 </div>
 
 

@@ -1,11 +1,11 @@
 /*----------------------------------------------------------------------------/
-/ TJpgDec - Tiny JPEG Decompressor R0.01                      (C)ChaN, 2011
+/ TJpgDec - Tiny JPEG Decompressor R0.01a                     (C)ChaN, 2012
 /-----------------------------------------------------------------------------/
 / The TJpgDec is a generic JPEG decompressor module for tiny embedded systems.
 / This is a free software that opened for education, research and commercial
 /  developments under license policy of following terms.
 /
-/  Copyright (C) 2011, ChaN, all right reserved.
+/  Copyright (C) 2012, ChaN, all right reserved.
 /
 / * The TJpgDec module is a free software and there is NO WARRANTY.
 / * No restriction on use. You can use, modify and redistribute it for
@@ -14,10 +14,10 @@
 /
 /-----------------------------------------------------------------------------/
 / Oct 04,'11 R0.01  First release.
+/ Feb 19,'12 R0.01a Fixed decompression fails when scan starts with an escape seq.
 /----------------------------------------------------------------------------*/
 
 #include "tjpgd.h"
-
 
 
 /*-----------------------------------------------*/
@@ -38,13 +38,13 @@ const BYTE Zig[64] = {	/* Zigzag-order to raster-order conversion table */
 
 /*-------------------------------------------------*/
 /* Input scale factor of Arai algorithm            */
-/* (scaled up 13 bits for fixed point operations)  */
+/* (scaled up 16 bits for fixed point operations)  */
 /*-------------------------------------------------*/
 
 #define IPSF(n)	Ipsf[n]
 
 static
-const WORD Ipsf[64] = {
+const WORD Ipsf[64] = {	/* See also aa_idct.png */
 	(WORD)(1.00000*8192), (WORD)(1.38704*8192), (WORD)(1.30656*8192), (WORD)(1.17588*8192), (WORD)(1.00000*8192), (WORD)(0.78570*8192), (WORD)(0.54120*8192), (WORD)(0.27590*8192),
 	(WORD)(1.38704*8192), (WORD)(1.92388*8192), (WORD)(1.81226*8192), (WORD)(1.63099*8192), (WORD)(1.38704*8192), (WORD)(1.08979*8192), (WORD)(0.75066*8192), (WORD)(0.38268*8192),
 	(WORD)(1.30656*8192), (WORD)(1.81226*8192), (WORD)(1.70711*8192), (WORD)(1.53636*8192), (WORD)(1.30656*8192), (WORD)(1.02656*8192), (WORD)(0.70711*8192), (WORD)(0.36048*8192),
@@ -155,7 +155,7 @@ UINT create_qt_tbl (	/* 0:OK, !0:Failed */
 		d = *data++;							/* Get table property */
 		if (d & 0xF0) return JDR_FMT1;			/* Err: not 8-bit resolution */
 		i = d & 3;								/* Get table ID */
-		pb = alloc_pool(jd, 64 * sizeof(LONG));	/* Allocate a memory block for the table */
+		pb = alloc_pool(jd, 64 * sizeof (LONG));/* Allocate a memory block for the table */
 		if (!pb) return JDR_MEM1;				/* Err: not enough memory */
 		jd->qttbl[i] = pb;						/* Register the table */
 		for (i = 0; i < 64; i++) {				/* Load the table */
@@ -200,7 +200,7 @@ UINT create_huffman_tbl (	/* 0:OK, !0:Failed */
 			np += b;	/* Get sum of code words for each code */
 		}
 
-		ph = alloc_pool(jd, np * sizeof(WORD));	/* Allocate a memory block for the code word table */
+		ph = alloc_pool(jd, np * sizeof (WORD));/* Allocate a memory block for the code word table */
 		if (!ph) return JDR_MEM1;			/* Err: not enough memory */
 		jd->huffcode[num][cls] = ph;
 		hc = 0;
@@ -342,7 +342,7 @@ INT huffext (			/* >=0: decoded data, <0: error code */
 
 
 /*-----------------------------------------------------------------------*/
-/* Apply Inverse-DCT in Arai Algorithm (refer to aa_idct.png)            */
+/* Apply Inverse-DCT in Arai Algorithm (see also aa_idct.png)            */
 /*-----------------------------------------------------------------------*/
 
 static
@@ -351,7 +351,7 @@ void block_idct (
 	BYTE* dst	/* Pointer to the destination to store the block as byte array */
 )
 {
-	const LONG M13 = (LONG)(1.41421*(1<<12)), M2 = (LONG)(1.08239*(1<<12)), M4 = (LONG)(2.61313*(1<<12)), M5 = (LONG)(1.84776*(1<<12));
+	const LONG M13 = (LONG)(1.41421*4096), M2 = (LONG)(1.08239*4096), M4 = (LONG)(2.61313*4096), M5 = (LONG)(1.84776*4096);
 	LONG v0, v1, v2, v3, v4, v5, v6, v7;
 	LONG t10, t11, t12, t13;
 	UINT i;
@@ -405,7 +405,7 @@ void block_idct (
 	/* Process rows */
 	src -= 8;
 	for (i = 0; i < 8; i++) {
-		v0 = src[0] + ((LONG)128 << 8);	/* Get even elements (remove DC offset (-128) here) */
+		v0 = src[0] + (128L << 8);	/* Get even elements (remove DC offset (-128) here) */
 		v1 = src[2];
 		v2 = src[4];
 		v3 = src[6];
@@ -437,7 +437,7 @@ void block_idct (
 		v5 -= v6;
 		v4 -= v5;
 
-		dst[0] = BYTECLIP((v0 + v7) >> 8);	/* Output transformed values */
+		dst[0] = BYTECLIP((v0 + v7) >> 8);	/* Descale the transformed values 8 bits and output */
 		dst[7] = BYTECLIP((v0 - v7) >> 8);
 		dst[1] = BYTECLIP((v1 + v6) >> 8);
 		dst[6] = BYTECLIP((v1 - v6) >> 8);
@@ -496,7 +496,7 @@ JRESULT mcu_load (
 			jd->dcv[cmp] = (SHORT)d;			/* Save current DC value for next block */
 		}
 		dqf = jd->qttbl[jd->qtid[cmp]];			/* De-quantizer table ID for this component */
-		tmp[0] = d * dqf[0] >> 8;				/* De-quantize and apply scale factor of Arai algorithm */
+		tmp[0] = d * dqf[0] >> 8;				/* De-quantize, apply scale factor of Arai algorithm and descale 8 bits */
 
 		/* Extract following 63 AC elements from input stream */
 		for (i = 1; i < 64; i++) tmp[i] = 0;	/* Clear rest of elements */
@@ -519,15 +519,14 @@ JRESULT mcu_load (
 				b = 1 << (b - 1);				/* MSB position */
 				if (!(d & b)) d -= (b << 1) - 1;/* Restore negative value if needed */
 				z = ZIG(i);						/* Zigzag-order to raster-order converted index */
-				tmp[z] = d * dqf[z] >> 8;		/* De-quantize and apply scale factor of Arai algorithm */
+				tmp[z] = d * dqf[z] >> 8;		/* De-quantize, apply scale factor of Arai algorithm and descale 8 bits */
 			}
 		} while (++i < 64);		/* Next AC element */
 
-		if (JD_USE_SCALE && jd->scale == 3) {
+		if (JD_USE_SCALE && jd->scale == 3)
 			*bp = (*tmp / 256) + 128;	/* If scale ratio is 1/8, IDCT can be ommited and only DC element is used */
-		} else {
+		else
 			block_idct(tmp, bp);		/* Apply IDCT and store the block to the MCU buffer */
-		}
 
 		bp += 64;				/* Next block */
 	}
@@ -545,11 +544,12 @@ JRESULT mcu_load (
 static
 JRESULT mcu_output (
 	JDEC* jd,	/* Pointer to the decompressor object */
+	UINT (*outfunc)(JDEC*, void*, JRECT*),	/* RGB output function */
 	UINT x,		/* MCU position in the image (left of the MCU) */
 	UINT y		/* MCU position in the image (top of the MCU) */
 )
 {
-	const INT CVACC = (sizeof(INT) > 2) ? 1024 : 128;
+	const INT CVACC = (sizeof (INT) > 2) ? 1024 : 128;
 	UINT ix, iy, mx, my, rx, ry;
 	INT yy, cb, cr;
 	BYTE *py, *pc, *rgb24;
@@ -682,7 +682,7 @@ JRESULT mcu_output (
 	}
 
 	/* Output the RGB rectangular */
-	return jd->outfunc(jd, jd->workbuf, &rect) ? JDR_OK : JDR_INTR; 
+	return outfunc(jd, jd->workbuf, &rect) ? JDR_OK : JDR_INTR; 
 }
 
 
@@ -872,9 +872,11 @@ JRESULT jd_prepare (
 			if (!jd->mcubuf) return JDR_MEM1;			/* Err: not enough memory */
 
 			/* Pre-load the JPEG data to extract it from the bit stream */
-			len = jd->infunc(jd, seg, JD_SZBUF - (UINT)ofs % JD_SZBUF);	/* Align read offset to JD_SZBUF */
-			if (!len) return JDR_INP;								/* Err: wrong stream termination */
-			jd->dctr = len - 1;	jd->dptr = seg;	jd->dmsk = 0x80;	/* Prepare to read bit stream */
+			jd->dptr = seg; jd->dctr = 0; jd->dmsk = 0;	/* Prepare to read bit stream */
+			if (ofs %= JD_SZBUF) {						/* Align read offset to JD_SZBUF */
+				jd->dctr = jd->infunc(jd, seg + ofs, JD_SZBUF - (UINT)ofs);
+				jd->dptr = seg + ofs - 1;
+			}
 
 			return JDR_OK;		/* Initialization succeeded. Ready to decompress the JPEG image. */
 
@@ -919,7 +921,6 @@ JRESULT jd_decomp (
 	JRESULT rc;
 
 
-	jd->outfunc = outfunc;
 	if (scale > (JD_USE_SCALE ? 3 : 0)) return JDR_PAR;
 	jd->scale = scale;
 
@@ -938,7 +939,7 @@ JRESULT jd_decomp (
 			}
 			rc = mcu_load(jd);					/* Load an MCU (decompress huffman coded stream and IDCT) */
 			if (rc != JDR_OK) return rc;
-			rc = mcu_output(jd, x, y);			/* Output the MCU (color space conversion, scaling and output) */
+			rc = mcu_output(jd, outfunc, x, y);	/* Output the MCU (color space conversion, scaling and output) */
 			if (rc != JDR_OK) return rc;
 		}
 	}
