@@ -20,16 +20,16 @@ target_sources(tjpgdec
     "src/tjpgd.h"
 )
 
-add_executable(simple
-  "test/simple/simple.c"
-  "src/tjpgd.h"
-)
-target_link_libraries(simple tjpgdec)
-
 if (WIN32)
 add_executable(tjpgd_vc
   "sample/tjpgd_vc/jdev.c"
   "src/tjpgd.h"
 )
 target_link_libraries(tjpgd_vc tjpgdec)
+else (WIN32)
+add_executable(simple
+  "test/simple/simple.c"
+  "src/tjpgd.h"
+)
+target_link_libraries(simple tjpgdec)
 endif (WIN32)
