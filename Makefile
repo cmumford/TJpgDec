@@ -10,3 +10,7 @@ test:
 .PHONY: run
 run:
 	build/Debug/tjpgd_vc.exe test/images
+
+.PHONY: fuzzer
+fuzzer:
+	build/fuzzer
