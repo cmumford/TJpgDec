@@ -13,4 +13,4 @@ run:
 
 .PHONY: fuzzer
 fuzzer:
-	build/fuzzer
+	build/Debug/fuzzer
