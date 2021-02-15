@@ -215,6 +215,7 @@ static JRESULT create_huffman_tbl (	/* 0:OK, !0:Failed */
 		ph = alloc_pool(jd, (unsigned int)(np * sizeof (uint16_t)));/* Allocate a memory block for the code word table */
 		if (!ph) return JDR_MEM1;			/* Err: not enough memory */
 		jd->huffcode[num][cls] = ph;
+		jd->huffcode_len[num][cls] = np;
 		hc = 0;
 		for (j = i = 0; i < 16; i++) {		/* Re-build huffman code word table */
 			b = pb[i];
@@ -302,6 +303,7 @@ static int huffext (		/* >=0: decoded data, <0: error code */
 	JDEC* jd,				/* Pointer to the decompressor object */
 	const uint8_t* hbits,	/* Pointer to the bit distribution table */
 	const uint16_t* hcode,	/* Pointer to the code word table */
+	const uint16_t hcode_len, /* number of entries in hcode. */
 	const uint8_t* hdata	/* Pointer to the data table */
 )
 {
@@ -311,6 +313,7 @@ static int huffext (		/* >=0: decoded data, <0: error code */
 	if (!hbits || !hcode || !hdata || !jd->dptr || !jd->inbuf)
 		return 0 - (int)JDR_FMT1;	/* Err: null data check */
 
+	const uint16_t* hcode_last = hcode + hcode_len - 1;
 	msk = jd->dmsk; dc = jd->dctr; dp = jd->dptr;	/* Bit mask, number of data available, read ptr */
 	s = *dp; v = f = 0;
 	bl = 16;	/* Max code length */
@@ -341,6 +344,8 @@ static int huffext (		/* >=0: decoded data, <0: error code */
 		msk >>= 1;
 
 		for (nd = *hbits++; nd; nd--) {	/* Search the code word in this bit length */
+			if (hcode > hcode_last)
+				return 0 - (int)JDR_FMT1;	/* Err: Buffer overrun */
 			if (v == *hcode++) {		/* Matched? */
 				jd->dmsk = msk; jd->dctr = dc; jd->dptr = dp;
 				return *hdata;			/* Return the decoded data */
@@ -482,6 +487,7 @@ static JRESULT mcu_load (
 	uint8_t *bp;
 	const uint8_t *hb, *hd;
 	const uint16_t *hc;
+	uint16_t hc_len;
 	const int32_t *dqf;
 
 
@@ -499,8 +505,9 @@ static JRESULT mcu_load (
 		/* Extract a DC element from input stream */
 		hb = jd->huffbits[id][0];				/* Huffman table for the DC element */
 		hc = jd->huffcode[id][0];
+		hc_len = jd->huffcode_len[id][0];
 		hd = jd->huffdata[id][0];
-		b = huffext(jd, hb, hc, hd);			/* Extract a huffman coded data (bit length) */
+		b = huffext(jd, hb, hc, hc_len, hd);			/* Extract a huffman coded data (bit length) */
 		if (b < 0) return 0 - b;				/* Err: invalid code or input */
 		d = jd->dcv[cmp];						/* DC value of previous block */
 		if (b) {								/* If there is any difference from previous block */
@@ -523,10 +530,11 @@ static JRESULT mcu_load (
 		for (i = 1; i < 64; tmp[i++] = 0) ;		/* Clear rest of elements */
 		hb = jd->huffbits[id][1];				/* Huffman table for the AC elements */
 		hc = jd->huffcode[id][1];
+		hc_len = jd->huffcode_len[id][1];
 		hd = jd->huffdata[id][1];
 		i = 1;					/* Top of the AC elements */
 		do {
-			b = huffext(jd, hb, hc, hd);		/* Extract a huffman coded value (zero runs and bit length) */
+			b = huffext(jd, hb, hc, hc_len, hd);		/* Extract a huffman coded value (zero runs and bit length) */
 			if (b == 0) break;					/* EOB? */
 			if (b < 0) return 0 - b;			/* Err: invalid code or input error */
 			z = (unsigned int)b >> 4;			/* Number of leading zero elements */
@@ -787,6 +795,7 @@ JRESULT jd_prepare (
 		for (j = 0; j < 2; j++) {
 			jd->huffbits[i][j] = 0;
 			jd->huffcode[i][j] = 0;
+			jd->huffcode_len[i][j] = 0;
 			jd->huffdata[i][j] = 0;
 		}
 	}
