@@ -249,6 +249,13 @@ int jpegtest(char* fn) {
   return 0;
 }
 
+const char *get_filename_ext(const char *filename) {
+    const char *dot = strrchr(filename, '.');
+    if(!dot || dot == filename)
+      return "";
+    return dot;
+}
+
 int main(int argc, char* argv[]) {
   if (argc != 2) {
     fprintf(stderr, "\n\nusage:\n\n");
@@ -267,13 +274,19 @@ int main(int argc, char* argv[]) {
 
   struct dirent* dir;
   while ((dir = readdir(d))) {
-    if (strstr(dir->d_name, ".jpg") || strstr(dir->d_name, ".JPG")) {
+    if (!strcmp(dir->d_name, ".") || !strcmp(dir->d_name, ".."))
+        continue;
+    const char* extn = get_filename_ext(dir->d_name);
+    if (!strcasecmp(extn, ".jpg") || !strcasecmp(extn, ".jpeg")) {
       char file_name[MAX_PATH];
       if (snprintf(file_name, MAX_PATH, "%s/%s", argv[1], dir->d_name) > 0) {
+        fprintf(stdout, "Opening \"%s\"\n", file_name);
         jpegtest(file_name);
       }
     }
   }
+
+  closedir(d);
 
   return 0;
 }
