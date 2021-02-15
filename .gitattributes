@@ -1,0 +1,17 @@
+* text=auto
+
+*.c text eol=crlf
+*.cc text eol=crlf
+*.css text eol=crlf
+*.h text eol=crlf
+*.html text eol=crlf
+*.md text eol=crlf
+*.txt text eol=crlf
+.gitattributes text eol=lf
+.gitignore text eol=lf
+LICENSE text eol=crlf
+Makefile text eol=crlf
+
+# Known binary file types.
+*.jpeg binary
+*.jpg binary
