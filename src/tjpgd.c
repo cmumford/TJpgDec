@@ -22,6 +22,7 @@
 
 #include "tjpgd.h"
 
+#define NUM_HUFF_BITS 16
 
 /*-----------------------------------------------*/
 /* Zigzag-order to raster-order conversion table */
@@ -204,17 +205,17 @@ static JRESULT create_huffman_tbl (	/* 0:OK, !0:Failed */
 		d = *data++;						/* Get table number and class */
 		if (d & 0xEE) return JDR_FMT1;		/* Err: invalid class/number */
 		cls = d >> 4; num = d & 0x0F;		/* class = dc(0)/ac(1), table number = 0/1 */
-		pb = alloc_pool(jd, 16);			/* Allocate a memory block for the bit distribution table */
+		pb = alloc_pool(jd, NUM_HUFF_BITS);			/* Allocate a memory block for the bit distribution table */
 		if (!pb) return JDR_MEM1;			/* Err: not enough memory */
 		jd->huffbits[num][cls] = pb;
-		for (np = i = 0; i < 16; i++) {		/* Load number of patterns for 1 to 16-bit code */
+		for (np = i = 0; i < NUM_HUFF_BITS; i++) {		/* Load number of patterns for 1 to 16-bit code */
 			np += (pb[i] = *data++);		/* Get sum of code words for each code */
 		}
 		ph = alloc_pool(jd, (unsigned int)(np * sizeof (uint16_t)));/* Allocate a memory block for the code word table */
 		if (!ph) return JDR_MEM1;			/* Err: not enough memory */
 		jd->huffcode[num][cls] = ph;
 		hc = 0;
-		for (j = i = 0; i < 16; i++) {		/* Re-build huffman code word table */
+		for (j = i = 0; i < NUM_HUFF_BITS; i++) {		/* Re-build huffman code word table */
 			b = pb[i];
 			while (b--) ph[j++] = hc++;
 			hc <<= 1;
@@ -334,7 +335,11 @@ static int huffext (		/* >=0: decoded data, <0: error code */
 		if (s & msk) v++;
 		msk >>= 1;
 
+		int bit_cnt = 0;
 		for (nd = *hbits++; nd; nd--) {	/* Search the code word in this bit length */
+			if (bit_cnt++ > NUM_HUFF_BITS)
+				return 0 - (int)JDR_FMT1;	/* Err: buffer overflow (may be collapted data) */
+
 			if (v == *hcode++) {		/* Matched? */
 				jd->dmsk = msk; jd->dctr = dc; jd->dptr = dp;
 				return *hdata;			/* Return the decoded data */
