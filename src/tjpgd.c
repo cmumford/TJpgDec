@@ -254,6 +254,8 @@ static int bitext (	/* >=0: extracted data, <0: error code */
 	uint8_t msk, s, *dp;
 	unsigned int dc, v, f;
 
+  if (!jd->dptr)
+				return 0 - (int)JDR_FMT1;	/* Err: unexpected flag is detected (may be collapted data) */
 
 	msk = jd->dmsk; dc = jd->dctr; dp = jd->dptr;	/* Bit mask, number of data available, read ptr */
 	s = *dp; v = f = 0;
@@ -309,7 +311,7 @@ static int huffext (		/* >=0: decoded data, <0: error code */
 	uint8_t msk, s, *dp;
 	unsigned int dc, v, f, bl, nd;
 
-	if (!hbits || !hcode || !hdata || jd->dptr || jd->inbuf)
+	if (!hbits || !hcode || !hdata || !jd->dptr || !jd->inbuf)
 		return 0 - (int)JDR_FMT1;	/* Err: null data check */
 
 	const uint16_t* hcode_last = hcode + hcode_len - 1;
@@ -489,6 +491,9 @@ static JRESULT mcu_load (
   uint16_t hc_len;
 	const int32_t *dqf;
 
+
+  if (!jd->workbuf)
+	  return JDR_FMT1;
 
 	nby = jd->msx * jd->msy;	/* Number of Y blocks (1, 2 or 4) */
 	nbc = 2;					/* Number of C blocks (2) */
