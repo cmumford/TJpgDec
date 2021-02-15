@@ -268,6 +268,8 @@ int main(int argc, char* argv[]) {
 
   DIR* d = opendir(argv[1]);
   if (!d) {
+    if (errno == ENOTDIR)
+      return jpegtest(argv[1]);
     fprintf(stderr, "Cannot open \"%s\"\n", argv[1]);
     return errno;
   }
