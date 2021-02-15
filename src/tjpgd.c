@@ -24,6 +24,8 @@
 
 #define NUM_HUFF_BITS 16
 
+#define NUM_DEQUANTIZER_TABLES 4
+
 /*-----------------------------------------------*/
 /* Zigzag-order to raster-order conversion table */
 /*-----------------------------------------------*/
@@ -509,7 +511,10 @@ static JRESULT mcu_load (
 			d += e;								/* Get current value */
 			jd->dcv[cmp] = (int16_t)d;			/* Save current DC value for next block */
 		}
-		dqf = jd->qttbl[jd->qtid[cmp]];			/* De-quantizer table ID for this component */
+    const int dqidx = jd->qtid[cmp];
+    if (dqidx >= NUM_DEQUANTIZER_TABLES)
+			return JDR_FMT1;
+		dqf = jd->qttbl[dqidx];			/* De-quantizer table ID for this component */
 		if (!dqf)
 			return JDR_FMT1;
 
