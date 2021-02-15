@@ -19,8 +19,8 @@ endif()
 
 if (JPEG_FUZZING)
   add_definitions(-DJPEG_FUZZING)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=fuzzer")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=fuzzer")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=fuzzer,address")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=fuzzer,address")
   set(JPEG_ASAN 1)
   set(JPEG_LLVM_CODE_COVERAGE 1)
 endif()
@@ -33,6 +33,11 @@ endif()
 if (JPEG_ASAN)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+endif()
+
+if (JPEG_MSAN)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=memory -fno-omit-frame-pointer")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=memory -fno-omit-frame-pointer")
 endif()
 
 include_directories(
@@ -49,6 +54,7 @@ target_sources(tjpgdec
 
 
 if (JPEG_FUZZING)
+
 add_executable(fuzzer
   "test/fuzz/fuzzer.cc"
   "src/tjpgd.h"
@@ -57,6 +63,7 @@ target_link_libraries(fuzzer
   PRIVATE
     tjpgdec
 )
+
 else (JPEG_FUZZING)
 
 if (WIN32)
