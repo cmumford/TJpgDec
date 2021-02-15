@@ -65,6 +65,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   JRESULT rc = jd_prepare(&decompressor, input_func, work_buffer,
                           kWorkBufferSize, &iodev);
   // assert(rc == JDR_OK);
-  rc = jd_decomp(&decompressor, output_func, SCALE);
+  jd_decomp(&decompressor, output_func, SCALE);
   return 0;
 }
