@@ -23,6 +23,8 @@
 #include "tjpgd.h"
 
 
+#define NUM_DEQUANTIZER_TABLES 4
+
 /*-----------------------------------------------*/
 /* Zigzag-order to raster-order conversion table */
 /*-----------------------------------------------*/
@@ -509,10 +511,12 @@ static JRESULT mcu_load (
 			d += e;								/* Get current value */
 			jd->dcv[cmp] = (int16_t)d;			/* Save current DC value for next block */
 		}
-		dqf = jd->qttbl[jd->qtid[cmp]];			/* De-quantizer table ID for this component */
+		const int dqidx = jd->qtid[cmp];
+		if (dqidx >= NUM_DEQUANTIZER_TABLES)
+			return JDR_FMT1;
+		dqf = jd->qttbl[dqidx];			/* De-quantizer table ID for this component */
 		if (!dqf)
 			return JDR_FMT1;
-
 		tmp[0] = d * dqf[0] >> 8;				/* De-quantize, apply scale factor of Arai algorithm and descale 8 bits */
 
 		/* Extract following 63 AC elements from input stream */
