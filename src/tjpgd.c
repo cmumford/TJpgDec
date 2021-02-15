@@ -932,6 +932,8 @@ JRESULT jd_decomp (
 	uint16_t rst, rsc;
 	JRESULT rc;
 
+	if (!jd || !outfunc)
+		return JDR_PAR;
 
 	if (scale > (JD_USE_SCALE ? 3 : 0)) return JDR_PAR;
 	jd->scale = scale;
