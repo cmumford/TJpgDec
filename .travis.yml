@@ -67,10 +67,9 @@ install:
 before_script:
 - mkdir -p build && cd build
 - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-    -DCMAKE_INSTALL_PREFIX=$HOME/.local
 - cmake --build .
 - cd ..
 
 script:
 - cd build && ctest --verbose && cd ..
-- cd build && cmake --build . --target install
+- cd build && cmake --build .
