@@ -59,6 +59,7 @@ CFLAGS += $(addprefix -W,$(WARNINGS))
 CFLAGS += $(addprefix -I,$(INCDIRS))
 CFLAGS += $(addprefix -D,$(DEFS))
 CFLAGS += -Wp,-M,-MP,-MT,$(OBJDIR)/$(*F).o,-MF,$(OBJDIR)/$(*F).d
+CFLAGS += -fno-diagnostics-color
 
 
 # Assembler flags
@@ -122,7 +123,7 @@ version :
 # Display size of file.
 size:
 	@echo
-	$(SIZE) -C --mcu=$(DEVICE) $(PROJECT).elf
+	$(SIZE) -G $(PROJECT).elf
 
 
 # Link: create ELF output file from object files.
