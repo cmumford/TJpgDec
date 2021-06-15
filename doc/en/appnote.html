@@ -45,10 +45,10 @@
 <span class="k">#include</span> "tjpgd.h"
 
 
-<span class="c">/* User defined device identifier */</span>
-<span class="k">typedef struct</span> {
-    FILE *fp;               <span class="c">/* File pointer for input function */</span>
-    uint8_t *fbuf;          <span class="c">/* Pointer to the frame buffer for output function */</span>
+<span class="c">/* Session identifier for input/output functions (name, members and usage are as user defined) */</span>
+<span class="c"><span class="k">typedef struct</span></span> {
+    FILE *fp;               <span class="c">/* Input stream */</span>
+    uint8_t *fbuf;          <span class="c">/* Output frame buffer */</span>
     unsigned int wfbuf;     <span class="c">/* Width of the frame buffer [pix] */</span>
 } IODEV;
 
@@ -57,19 +57,19 @@
 <span class="c">/* User defined input funciton  */</span>
 <span class="c">/*------------------------------*/</span>
 
-unsigned int in_func (  <span class="c">/* Returns number of bytes read (zero on error) */</span>
-    JDEC* jd,           <span class="c">/* Decompression object */</span>
-    uint8_t* buff,      <span class="c">/* Pointer to the read buffer (null to remove data) */</span>
-    unsigned int nbyte  <span class="c">/* Number of bytes to read/remove */</span>
+size_t in_func (    <span class="c">/* Returns number of bytes read (zero on error) */</span>
+    JDEC* jd,       <span class="c">/* Decompression object */</span>
+    uint8_t* buff,  <span class="c">/* Pointer to the read buffer (null to remove data) */</span>
+    size_t nbyte    <span class="c">/* Number of bytes to read/remove */</span>
 )
 {
-    IODEV *dev = (IODEV*)jd-&gt;device;   <span class="c">/* Device identifier for the session (5th argument of jd_prepare function) */</span>
+    IODEV *dev = (IODEV*)jd-&gt;device;   <span class="c">/* Session identifier (5th argument of jd_prepare function) */</span>
 
 
-    if (buff) { <span class="c">/* Raad data from imput stream */</span>
-        return (unsigned int)fread(buff, 1, nbyte, dev-&gt;fp);
-    } else {    <span class="c">/* Remove data from input stream */</span>
-        return fseek(dev-&gt;fp, nbyte, SEEK_CUR) ? 0 : nbyte;
+    <span class="k">if</span> (buff) { <span class="c">/* Raad data from imput stream */</span>
+        <span class="k">return</span> fread(buff, 1, nbyte, dev-&gt;fp);
+    } <span class="k">else</span> {    <span class="c">/* Remove data from input stream */</span>
+        <span class="k">return</span> fseek(dev-&gt;fp, nbyte, SEEK_CUR) ? 0 : nbyte;
     }
 }
 
@@ -78,33 +78,33 @@ unsigned int in_func (  <span class="c">/* Returns number of bytes read (zero on
 <span class="c">/* User defined output funciton */</span>
 <span class="c">/*------------------------------*/</span>
 
-int out_func (      <span class="c">/* 1:Ok, 0:Aborted */</span>
+int out_func (      <span class="c">/* 1:Continue, 0:Abort */</span>
     JDEC* jd,       <span class="c">/* Decompression object */</span>
     void* bitmap,   <span class="c">/* Bitmap data to be output */</span>
     JRECT* rect     <span class="c">/* Rectangular region of output image */</span>
 )
 {
-    IODEV *dev = (IODEV*)jd-&gt;device;
+    IODEV *dev = (IODEV*)jd-&gt;device;   <span class="c">/* Session identifier (5th argument of jd_prepare function) */</span>
     uint8_t *src, *dst;
     uint16_t y, bws, bwd;
 
 
     <span class="c">/* Put progress indicator */</span>
-    if (rect-&gt;left == 0) {
+    <span class="k">if</span> (rect-&gt;left == 0) {
         printf("\r%lu%%", (rect-&gt;top &lt;&lt; jd-&gt;scale) * 100UL / jd-&gt;height);
     }
 
-    <span class="c">/* Copy the decompressed RGB rectanglar to the frame buffer (assuming RGB888 cfg) */</span>
+    <span class="c">/* Copy the output image rectanglar to the frame buffer (assuming RGB888 output) */</span>
     src = (uint8_t*)bitmap;
     dst = dev-&gt;fbuf + 3 * (rect-&gt;top * dev-&gt;wfbuf + rect-&gt;left);  <span class="c">/* Left-top of destination rectangular */</span>
-    bws = 3 * (rect-&gt;right - rect-&gt;left + 1);     <span class="c">/* Width of source rectangular [byte] */</span>
+    bws = 3 * (rect-&gt;right - rect-&gt;left + 1);     <span class="c">/* Width of output rectangular [byte] */</span>
     bwd = 3 * dev-&gt;wfbuf;                         <span class="c">/* Width of frame buffer [byte] */</span>
-    for (y = rect-&gt;top; y &lt;= rect-&gt;bottom; y++) {
+    <span class="k">for</span> (y = rect-&gt;top; y &lt;= rect-&gt;bottom; y++) {
         memcpy(dst, src, bws);   <span class="c">/* Copy a line */</span>
         src += bws; dst += bwd;  <span class="c">/* Next line */</span>
     }
 
-    return 1;    <span class="c">/* Continue to decompress */</span>
+    <span class="k">return</span> 1;    <span class="c">/* Continue to decompress */</span>
 }
 
 
@@ -116,45 +116,47 @@ int main (int argc, char* argv[])
 {
     JRESULT res;      <span class="c">/* Result code of TJpgDec API */</span>
     JDEC jdec;        <span class="c">/* Decompression object */</span>
-    void *work = (void*)malloc(3100);  <span class="c">/* Pointer to the work area */</span>
-    IODEV devid;      <span class="c">/* User defined device identifier */</span>
+    void *work;       <span class="c">/* Pointer to the work area */</span>
+    size_t sz_work = 3100; <span class="c">/* Size of work area */</span>
+    IODEV devid;      <span class="c">/* Session identifier */</span>
 
 
     <span class="c">/* Initialize input stream */</span>
-    if (argc &lt; 2) return -1;
+    <span class="k">if</span> (argc &lt; 2) <span class="k">return</span> -1;
     devid.fp = fopen(argv[1], "rb");
-    if (!devid.fp) return -1;
+    <span class="k">if</span> (!devid.fp) <span class="k">return</span> -1;
 
     <span class="c">/* Prepare to decompress */</span>
-    res = jd_prepare(&amp;jdec, in_func, work, 3100, &amp;devid);
-    if (res == JDR_OK) {
+    work = (void*)malloc(sz_work);
+    res = jd_prepare(&amp;jdec, in_func, work, sz_work, &amp;devid);
+    <span class="k">if</span> (res == JDR_OK) {
         <span class="c">/* It is ready to dcompress and image info is available here */</span>
-        printf("Image size is %u x %u.\n%u bytes of work ares is used.\n", jdec.width, jdec.height, 3100 - jdec.sz_pool);
+        printf("Image size is %u x %u.\n%u bytes of work ares is used.\n", jdec.width, jdec.height, sz_work - jdec.sz_pool);
 
         <span class="c">/* Initialize output device */</span>
         devid.fbuf = (uint8_t*)malloc(3 * jdec.width * jdec.height); <span class="c">/* Create frame buffer for output image (assuming RGB888 cfg) */</span>
         devid.wfbuf = jdec.width;
 
         res = jd_decomp(&amp;jdec, out_func, 0);   <span class="c">/* Start to decompress with 1/1 scaling */</span>
-        if (res == JDR_OK) {
+        <span class="k">if</span> (res == JDR_OK) {
             <span class="c">/* Decompression succeeded. You have the decompressed image in the frame buffer here. */</span>
             printf("\rDecompression succeeded.\n");
 
-        } else {
-            printf("Failed to decompress. (rc=%d)\n", res);
+        } <span class="k">else</span> {
+            printf("jd_decomp() failed (rc=%d)\n", res);
         }
 
         free(devid.fbuf);    <span class="c">/* Discard frame buffer */</span>
 
-    } else {
-        printf("Failed to prepare. (rc=%d)\n", res);
+    } <span class="k">else</span> {
+        printf("jd_prepare() failed (rc=%d)\n", res);
     }
 
     free(work);             <span class="c">/* Discard work area */</span>
 
     fclose(devid.fp);       <span class="c">/* Close the JPEG file */</span>
 
-    return res;
+    <span class="k">return</span> res;
 }
 </pre>
 
@@ -165,8 +167,8 @@ int main (int argc, char* argv[])
 <ul>
 <li>JPEG standard: Baseline only. Progressive and Lossless JPEG format are not supported.</li>
 <li>Image size: Upto 65520 x 65520 pixels.</li>
-<li>Colorspace: YCbCr three components only. Grayscale image is not supported.</li>
-<li>Sampling factor: 4:4:4, 4:2:2 or 4:2:0.</li>
+<li>Colorspace: Y-Cb-Cr (color) and Grayscale (monochrome).</li>
+<li>Sampling factor: 4:4:4, 4:2:2 or 4:2:0 for color image.</li>
 </ul>
 </div>
 
@@ -175,10 +177,10 @@ int main (int argc, char* argv[])
 <p>These are the memory usage of some platforms at default configuration. Each compilations are optimized in code size.</p>
 <table class="lst2">
 <tr><th></th><th>AVR</th><th>PIC24</th><th>CM0</th><th>IA-32</th></tr>
-<tr><td>Compiler</td><td>GCC</td><td>C30</td><td>GCC</td><td>VC6</td></tr>
-<tr class="lst3"><td>text+const</td><td>9422</td><td>6544</td><td>4536</td><td>6144</td></tr>
+<tr><td>Compiler</td><td>GCC</td><td>C30</td><td>GCC</td><td>MSC</td></tr>
+<tr class="lst3"><td>text+const</td><td>6.1k</td><td>5.1k</td><td>3.1k</td><td>3.7k</td></tr>
 </table>
-<p>TJpgDec requires a work area upto 3100 bytes for most JPEG images. It exactly depends on what parameter has been used to create the JPEG image. The 3100 bytes is the maximum memory requirement at default input buffer configuration (<tt>JD_SZBUF == 512</tt>) and it varies with <tt>JD_SZBUF</tt>. The <tt>JD_SZBUF</tt> defines how many bytes read from input stream at a time. TJpgDec alignes each read request to the buffer size, so that 512, 1024, 2048... byte is ideal to read data from the storage device.</p>
+<p>TJpgDec requires a work area upto 3100 bytes for most JPEG images. It exactly depends on what parameter has been used to create the JPEG image. The 3100 bytes is the maximum memory requirement at default input buffer configuration (<tt>JD_SZBUF == 512</tt>) and it varies by <tt>JD_SZBUF</tt>. The <tt>JD_SZBUF</tt> defines how many bytes read from input stream at a time. TJpgDec alignes each read request to the buffer size, so that 512, 1024, 2048... byte is ideal to read data from the storage device.</p>
 </div>
 
 

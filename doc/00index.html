@@ -5,20 +5,20 @@
 <meta http-equiv="Content-Style-Type" content="text/css">
 <meta name="description" content="Open souece JPEG decompressor module for embedded projects">
 <link rel="stylesheet" href="css_e.css" type="text/css" media="screen" title="ELM Default">
-<title>ELM - TJpgDec Tiny JPEG Decompressor</title>
+<title>TJpgDec - Tiny JPEG Decompressor</title>
 </head>
 
 <body>
-<h1>TJpgDec Tiny JPEG Decompressor</h1>
+<h1>TJpgDec - Tiny JPEG Decompressor</h1>
 <hr>
 
 <div class="abst">
 <img src="jpeg.jpeg" class="rset" width="250" height="250" alt="layer">
-<p>TJpgDec is a generic JPEG image decompressor module that highly optimized for small embedded systems. It works with very low memory consumption so that it can be incorporated into tiny microcontrollers, such as AVR, 8051, PIC, Z80, Cortex-M0 and etc.</p>
+<p>TJpgDec is a generic JPEG image decompressor module that highly optimized for small embedded systems. It works with very low memory consumption, so that it can be incorporated into tiny microcontrollers, such as AVR, 8051, PIC, Z80, Cortex-M0 and etc.</p>
 
 <h4>Features</h4>
 <ul>
- <li>Platform independent. Written in ANSI-C.</li>
+ <li>Platform independent. Written in plain C (C99).</li>
  <li>Easy to use master mode operation.</li>
  <li>Fully re-entrant architecture.</li>
  <li>Very small memory footprint:
@@ -30,7 +30,7 @@
  <li>Output format:
   <ul>
    <li>Scaling ratio: 1/1, 1/2, 1/4 or 1/8 selectable on decompression.</li>
-   <li>Pixel format: RGB888 or RGB565 pre-configurable.</li>
+   <li>Pixel format: RGB888, RGB565 or Grayscale pre-configurable.</li>
   </ul>
  </li>
 </ul>
@@ -41,18 +41,18 @@
 <h3>Application Interface</h3>
 <p>There are two API functions to analyze and decompress the JPEG image.</p>
 <ul>
-<li><a href="en/prepare.html">jd_prepare</a> - Prepare to decompress a JPEG image</li>
-<li><a href="en/decomp.html">jd_decomp</a> - Execute to decompress the JPEG image</li>
+<li><a href="en/prepare.html">jd_prepare</a> - Prepare decompression of the JPEG image</li>
+<li><a href="en/decomp.html">jd_decomp</a> - Execute decompression of the JPEG image</li>
 </ul>
 </div>
 
 
 <div class="para">
 <h3>I/O functions</h3>
-<p>To input the JPEG stream and output the decompressed image, TJpgDec requires two user defined I/O functions.</p>
+<p>To input the JPEG data and output the decompressed image, TJpgDec requires two user defined I/O functions. These are called back from the TJpgDec module in the decompression process.</p>
 <ul>
 <li><a href="en/input.html">Input Funciotn</a> - Read JPEG data from the input stream</li>
-<li><a href="en/output.html">Output Function</a> - Write pixel data to the destination object</li>
+<li><a href="en/output.html">Output Function</a> - Output the decompressed image to the destination object</li>
 </ul>
 </div>
 
@@ -61,9 +61,12 @@
 <h3>Resources</h3>
 <p>The TJpgDec module is a free software opened for education, research and development. You can use, modify and/or redistribute it for personal projects or commercial products without any restriction under your responsibility.</p>
 <ul>
-<li>Read first: <a href="en/appnote.html">TJpgDec Application Note</a></li>
+<li>Getting Started: <a href="en/appnote.html">TJpgDec Application Note</a></li>
 </ul>
 </div>
 
+
+<hr>
+<p class="foot"><a href="../../fsw_e.html">Return</a></p>
 </body>
 </html>
