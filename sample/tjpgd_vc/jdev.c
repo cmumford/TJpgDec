@@ -19,37 +19,41 @@
 #include "tjpgd.h"
 
 
-
-#define MODE	0	/* Test mode: 0:JPEG to BMP conversion, 1:Output decode status */
+#define MODE	0	/* Test mode: 0:Show decmpression status, 1:and output in BMP */
 #define SCALE	0	/* Output scaling 0:1/1, 1:1/2, 2:1/4 or 3:1/8 */
 
 
+
+/*---------------------------------*/
 /* User defined session identifier */
+/*---------------------------------*/
 
 typedef struct {
-	HANDLE hin;			/* Handle to input stream */
+	HANDLE hin;			/* Handle to the input stream */
 	uint8_t *frmbuf;	/* Pointer to the frame buffer */
-	uint32_t wbyte;		/* Number of bytes a line of the frame buffer */
+	uint32_t wbyte;		/* Number of bytes a line in the frame buffer */
 } IODEV;
 
 
 
+/*-----------------------------*/
 /* User defined input function */
+/*-----------------------------*/
 
-unsigned int input_func (	/* Returns number of bytes read (zero on error) */
-	JDEC* jd,				/* Decompression object */
-	uint8_t* buff,			/* Pointer to the read buffer (null to remove data) */
-	unsigned int ndata		/* Number of bytes to read/skip */
+size_t input_func (	/* Returns number of bytes read (zero on error) */
+	JDEC* jd,		/* Decompression object */
+	uint8_t* buff,	/* Pointer to the read buffer (null to remove data) */
+	size_t ndata	/* Number of bytes to read/skip */
 )
 {
 	DWORD rb;
 	IODEV *dev = (IODEV*)jd->device;
 
 
-	if (buff) {	/* Read bytes */
+	if (buff) {	/* Read bytes from input stream */
 		ReadFile(dev->hin, buff, ndata, &rb, 0);
 		return (unsigned int)rb;
-	} else {	/* Remove bytes */
+	} else {	/* Remove bytes from input stream */
 		rb = SetFilePointer(dev->hin, ndata, 0, FILE_CURRENT);
 		return rb == 0xFFFFFFFF ? 0 : ndata;
 	}
@@ -57,7 +61,9 @@ unsigned int input_func (	/* Returns number of bytes read (zero on error) */
 
 
 
+/*------------------------------*/
 /* User defined output function */
+/*------------------------------*/
 
 int output_func (	/* 1:Ok, 0:Aborted */
 	JDEC* jd,		/* Decompression object */
@@ -65,29 +71,38 @@ int output_func (	/* 1:Ok, 0:Aborted */
 	JRECT* rect		/* Rectangular region to output */
 )
 {
-	uint32_t ny, nbx, xc, wd;
+	uint32_t nx, ny, xc, wd;
 	uint8_t *src, *dst;
 	IODEV *dev = (IODEV*)jd->device;
 
 
-	/* Put progress indicator */
-	if (MODE == 0 && rect->left == 0) {
-		printf("\r%lu%%", (rect->top << jd->scale) * 100UL / jd->height);
-	}
-
-	nbx = (rect->right - rect->left + 1) * 3;	/* Number of bytes a line of the rectangular */
-	ny = rect->bottom - rect->top + 1;			/* Number of lines of the rectangular */
-	src = (uint8_t*)bitmap;						/* RGB bitmap to be output */
+	nx = rect->right - rect->left + 1;
+	ny = rect->bottom - rect->top + 1;	/* Number of lines of the rectangular */
+	src = (uint8_t*)bitmap;				/* RGB bitmap to be output */
 
 	wd = dev->wbyte;							/* Number of bytes a line of the frame buffer */
 	dst = dev->frmbuf + rect->top * wd + rect->left * 3;	/* Left-top of the destination rectangular in the frame buffer */
 
 	do {	/* Copy the rectangular to the frame buffer */
-		xc = nbx;
+		xc = nx;
 		do {
-			*dst++ = *src++;
+			if (JD_FORMAT == 2) {	/* Grayscale output */
+				*dst++ = *src;
+				*dst++ = *src;
+				*dst++ = *src;
+				src++;
+			} else if (JD_FORMAT == 1) {	/* RGB565 output */
+				*dst++ = (src[1] & 0xF8) | src[1] >> 5;
+				*dst++ = src[1] << 5 | (src[0] & 0xE0) >> 3 | (src[1] >> 1 & 3);
+				*dst++ = src[0] << 3 | (src[0] & 0x1F) >> 2;
+				src += 2;
+			} else {				/* RGB888 output */
+				*dst++ = *src++;
+				*dst++ = *src++;
+				*dst++ = *src++;
+			}
 		} while (--xc);
-		dst += wd - nbx;
+		dst += wd - nx * 3;
 	} while (--ny);
 
 	return 1;	/* Continue to decompress */
@@ -95,6 +110,10 @@ int output_func (	/* 1:Ok, 0:Aborted */
 
 
 
+
+/*------------------------------*/
+/* Output frame buffer in BMP   */
+/*------------------------------*/
 
 void write_bmp (
 	const char* fname,
@@ -146,10 +165,11 @@ void write_bmp (
 
 
 
+/*------------------------------*/
+/* Decompress a JPEG stream     */
+/*------------------------------*/
 
-void jpegtest (
-	char* fn
-)
+JRESULT jpegtest (char* fname)
 {
 	const size_t sz_work = 4096;	/* Size of working buffer for TJpgDec module */
 	void *jdwork;	/* Pointer to TJpgDec work area */
@@ -160,53 +180,41 @@ void jpegtest (
 	char str[256];
 
 
-	printf("%s", fn);	/* Put file name */
+	printf("%s", fname);	/* Put file name */
 
 	/* Open JPEG file */
-	iodev.hin = CreateFile(fn, GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+	iodev.hin = CreateFile(fname, GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
 	if (iodev.hin != INVALID_HANDLE_VALUE) {
 
-		jdwork = VirtualAlloc(0, sz_work, MEM_COMMIT, PAGE_READWRITE);	/* Allocate a work area for TJpgDec */
+		jdwork = VirtualAlloc(0, sz_work, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);	/* Allocate a work area for TJpgDec */
 
-		rc = jd_prepare(&jd, input_func, jdwork, (unsigned int)sz_work, &iodev);		/* Prepare to decompress the file */
+		/* Prepare to decompress the JPEG image */
+		rc = jd_prepare(&jd, input_func, jdwork, (unsigned int)sz_work, &iodev);
 
-		if (!rc) {
-			if (MODE == 1) {	/* Put file properties */
-				printf(",%u,%u", jd.width, jd.height);	/* Image size */
-				printf(",[%d:%d:%d]", 4, 4 / jd.msx, (jd.msy == 2) ? 0 : (jd.msx == 1) ? 4 : 2);	/* Sampling ratio */
-				printf(",%u", sz_work - jd.sz_pool);	/* Get used memory size by rest of memory pool */
-			} else {
-				printf("\n");
-			}
-			xs = jd.width >> SCALE;		/* Output size */
+		if (rc == JDR_OK) {
+			printf(",%u,%u", jd.width, jd.height);	/* Image dimensions */
+			printf(",%s", jd.ncomp == 1 ? "4:0:0" : jd.msx == 1 ? "4:4:4" : jd.msy == 1 ? "4:2:2" : "4:2:0");	/* Sampling ratio */
+			printf(",%u", sz_work - jd.sz_pool);	/* Used memory size */
+
+			/* Initialize frame buffer */
+			xs = jd.width >> SCALE;		/* Image size to output */
 			ys = jd.height >> SCALE;
 			xb = (xs * 3 + 3) & ~3;		/* Byte width of the frame buffer */
 			iodev.wbyte = xb;
-			iodev.frmbuf = VirtualAlloc(0, xb * ys, MEM_COMMIT, PAGE_READWRITE);	/* Allocate an output frame buffer */
-			rc = jd_decomp(&jd, output_func, SCALE);	/* Start to decompress */
-			if (!rc) {		/* Save the decompressed picture as a bmp file */
-				if (MODE == 1) {
-					printf(",%d", rc);
-				} else {
-					printf("\rOK  ");
-					strcpy(str, fn);
-					strcpy(str + strlen(str) - 4, ".bmp");
-					write_bmp(str, (uint8_t*)iodev.frmbuf, xs, ys);
-				}
-			} else {	/* Error occured on decompress */
-				if (MODE == 1) {
-					printf(",%d", rc);
-				} else {
-					printf("\rError(%d)", rc);
-				}
+			iodev.frmbuf = VirtualAlloc(0, xb * ys, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);	/* Allocate a frame buffer */
+
+			/* Start JPEG decompression */
+			rc = jd_decomp(&jd, output_func, SCALE);
+
+			printf(",%d", rc);
+			if (MODE == 1 && rc == JDR_OK) {		/* Save the decompressed picture as a bmp file */
+				strcpy(str, fname);
+				strcpy(str + strlen(str) - 4, ".bmp");
+				write_bmp(str, (uint8_t*)iodev.frmbuf, xs, ys);
 			}
 			VirtualFree(iodev.frmbuf, 0, MEM_RELEASE);	/* Discard frame buffer */
 		} else {	/* Error occured on prepare */
-			if (MODE == 1) {
-				printf(",,,,,%d", rc);
-			} else {
-				printf("\nErr: %d", rc);
-			}
+			printf(",,,,,%d", rc);
 		}
 
 		VirtualFree(jdwork, 0, MEM_RELEASE);	/* Discard work area */
@@ -215,6 +223,7 @@ void jpegtest (
 	}
 
 	printf("\n");
+	return rc;
 }
 
 
@@ -225,35 +234,37 @@ int main (int argc, char* argv[])
 {
 	HANDLE fd;
 	WIN32_FIND_DATA ff;
-	static int nest;
+	int ok = 0, fail = 0;
+	LARGE_INTEGER freq, tmr_s, tmr_e;
 
-
-	if (!nest) {
-		if (MODE == 1) printf("File Name,Width,Height,Sampling,Used Memory,Result\n");
-		if (argc == 2) SetCurrentDirectory(argv[1]);
+	if (argc == 2) {
+		SetCurrentDirectory(argv[1]);
+		printf("FileName,Width,Height,Sampling,UsedMemory,Result\n");
+	} else {
+		printf("Usage: jdev <directory>\n");
+		return 1;
 	}
-	nest++;
+	QueryPerformanceCounter(&tmr_s);
 
-	fd = FindFirstFile("*", &ff);
+	fd = FindFirstFile("*.jpg", &ff);	/* Process all .jpg files in the dir */
 	if (fd != INVALID_HANDLE_VALUE) {
 		do {
-			if (ff.cFileName[0] == '.') continue;
-			if (ff.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-				SetCurrentDirectory(ff.cFileName);
-				main(0, 0);
-				SetCurrentDirectory("..");
+			if (ff.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
+			if (jpegtest(ff.cFileName) == JDR_OK) {
+				ok++;
 			} else {
-				if (strstr(ff.cFileName, ".jpg") || strstr(ff.cFileName, ".JPG")) {
-					jpegtest(ff.cFileName);
-				}
+				fail++;
 			}
 		} while (FindNextFile(fd, &ff));
-
 		FindClose(fd);
 	}
+	QueryPerformanceCounter(&tmr_e);
+	QueryPerformanceFrequency(&freq);
 
-	nest--;
-
+	printf("\n");
+	printf("%f seconds\n", (double)(tmr_e.QuadPart - tmr_s.QuadPart) / freq.QuadPart);
+	printf("%d succeeded, %d failed.\n", ok, fail);
+	printf("Type enter..."); getchar();
 	return 0;
 }
 

@@ -1,21 +1,15 @@
 /*----------------------------------------------------------------------------/
-/ TJpgDec - Tiny JPEG Decompressor include file               (C)ChaN, 2020
+/ TJpgDec - Tiny JPEG Decompressor include file               (C)ChaN, 2021
 /----------------------------------------------------------------------------*/
 #ifndef DEF_TJPGDEC
 #define DEF_TJPGDEC
-/*---------------------------------------------------------------------------*/
-/* System Configurations */
-
-#define	JD_SZBUF		1024	/* Size of stream input buffer */
-#define JD_FORMAT		1	/* Output pixel format 0:RGB888 (3 BYTE/pix), 1:RGB565 (1 WORD/pix) */
-#define	JD_USE_SCALE	1	/* Use descaling feature for output */
-#define JD_TBLCLIP		1	/* Use table for saturation (might be a bit faster but increases 1K bytes of code size) */
-
-/*---------------------------------------------------------------------------*/
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "tjpgdcnf.h"
+#include <string.h>
 
 #if defined(_WIN32)	/* Main development platform */
 typedef unsigned char	uint8_t;
@@ -23,8 +17,8 @@ typedef unsigned short	uint16_t;
 typedef short			int16_t;
 typedef unsigned long	uint32_t;
 typedef long			int32_t;
-#else
-#include "stdint.h"
+#else				/* Embedded platform */
+#include <stdint.h>
 #endif
 
 /* Error code */
@@ -42,9 +36,12 @@ typedef enum {
 
 
 
-/* Rectangular structure */
+/* Rectangular region in the output image */
 typedef struct {
-	uint16_t left, right, top, bottom;
+	uint16_t left;		/* Left end */
+	uint16_t right;		/* Right end */
+	uint16_t top;		/* Top end */
+	uint16_t bottom;	/* Bottom end */
 } JRECT;
 
 
@@ -52,13 +49,14 @@ typedef struct {
 /* Decompressor object structure */
 typedef struct JDEC JDEC;
 struct JDEC {
-	unsigned int dctr;			/* Number of bytes available in the input buffer */
+	size_t dctr;				/* Number of bytes available in the input buffer */
 	uint8_t* dptr;				/* Current data read ptr */
 	uint8_t* inbuf;				/* Bit stream input buffer */
-	uint8_t dmsk;				/* Current bit in the current read byte */
+	uint8_t dbit;				/* Number of bits availavble in reading byte */
 	uint8_t scale;				/* Output scaling ratio */
 	uint8_t msx, msy;			/* MCU size in unit of block (width, height) */
-	uint8_t qtid[3];			/* Quantization table ID of each component */
+	uint8_t qtid[3];			/* Quantization table ID of each component, Y, Cb, Cr */
+	uint8_t ncomp;				/* Number of color components 1:grayscale, 3:color */
 	int16_t dcv[3];				/* Previous DC element of each component */
 	uint16_t nrst;				/* Restart inverval */
 	uint16_t width, height;		/* Size of the input image (pixel) */
@@ -70,15 +68,15 @@ struct JDEC {
 	void* workbuf;				/* Working buffer for IDCT and RGB output */
 	uint8_t* mcubuf;			/* Working buffer for the MCU */
 	void* pool;					/* Pointer to available memory pool */
-	unsigned int sz_pool;		/* Size of momory pool (bytes available) */
-	unsigned int (*infunc)(JDEC*, uint8_t*, unsigned int);	/* Pointer to jpeg stream input function */
+	size_t sz_pool;				/* Size of momory pool (bytes available) */
+	size_t (*infunc)(JDEC*, uint8_t*, size_t);	/* Pointer to jpeg stream input function */
 	void* device;				/* Pointer to I/O device identifiler for the session */
 };
 
 
 
 /* TJpgDec API functions */
-JRESULT jd_prepare (JDEC* jd, unsigned int (*infunc)(JDEC*,uint8_t*,unsigned int), void* pool, unsigned int sz_pool, void* dev);
+JRESULT jd_prepare (JDEC* jd, size_t (*infunc)(JDEC*,uint8_t*,size_t), void* pool, size_t sz_pool, void* dev);
 JRESULT jd_decomp (JDEC* jd, int (*outfunc)(JDEC*,void*,JRECT*), uint8_t scale);
 
 

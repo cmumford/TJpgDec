@@ -14,7 +14,7 @@
 #include <string.h>
 #include "disp.h"
 #include "xprintf.h"
-#include "uart.h"
+#include "uart_pic24f.h"
 
 
 static int MaskT, MaskL, MaskR, MaskB;	/* Active drawing area */
@@ -27,6 +27,25 @@ static uint8_t Sjis1;			/* Sjis leading byte */
 #endif
 
 
+static WORD ld_word (const BYTE* ptr)	/*	 Load a 2-byte little-endian word */
+{
+	WORD rv;
+
+	rv = ptr[1];
+	rv = rv << 8 | ptr[0];
+	return rv;
+}
+
+static DWORD ld_dword (const BYTE* ptr)	/* Load a 4-byte little-endian word */
+{
+	DWORD rv;
+
+	rv = ptr[3];
+	rv = rv << 8 | ptr[2];
+	rv = rv << 8 | ptr[1];
+	rv = rv << 8 | ptr[0];
+	return rv;
+}
 
 
 
@@ -576,12 +595,12 @@ void load_bmp (
 
 	f_read(fp, buff, 128, &bx);
 	if (bx != 128 || memcmp(buff, "BM", 2)) return;
-	biofs = LD_DWORD(buff+10);			/* bfOffBits */
-	if (LD_WORD(buff+26) != 1) return;	/* biPlanes */
-	if (LD_WORD(buff+28) != 24) return;	/* biBitCount */
-	if (LD_DWORD(buff+30) != 0) return;	/* biCompression */
-	bm_w = LD_DWORD(buff+18);			/* biWidth */
-	bm_h = LD_DWORD(buff+22);			/* biHeight */
+	biofs = ld_dword(buff+10);			/* bfOffBits */
+	if (ld_word(buff+26) != 1) return;	/* biPlanes */
+	if (ld_word(buff+28) != 24) return;	/* biBitCount */
+	if (ld_dword(buff+30) != 0) return;	/* biCompression */
+	bm_w = ld_dword(buff+18);			/* biWidth */
+	bm_h = ld_dword(buff+22);			/* biHeight */
 	iw = ((bm_w * 3) + 3) & ~3;			/* Bitmap line stride [byte] */
 	if (!bm_w || !bm_h) return;			/* Check bitmap size */
 	if (iw > sz_work) return;			/* Check if buffer size is sufficient for this file */
@@ -731,7 +750,7 @@ void load_jpg (
 
 		/* Display size information at bottom of screen */
 		disp_locate(0, TS_HEIGHT - 1);
-		xfprintf(disp_putc, "%ux%u 1/%u", jd.width, jd.height, 1 << scale);
+		xfprintf((void(*)(int))disp_putc, "%ux%u 1/%u", jd.width, jd.height, 1 << scale);
 
 		/* Start to decompress the JPEG file */
 		rc = jd_decomp(&jd, tjd_output, scale);	/* Start decompression */
@@ -740,7 +759,7 @@ void load_jpg (
 
 		/* Display error code */
 		disp_locate(0, 0);
-		xfprintf(disp_putc, "Error: %d", rc);
+		xfprintf((void(*)(int))disp_putc, "Error: %d", rc);
 	}
 	__getch();
 }

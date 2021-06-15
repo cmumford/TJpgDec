@@ -1,12 +1,12 @@
 /*---------------------------------------------------------------*/
-/* FAT file system module test program            (C)ChaN, 2008  */
+/* FAT file system module test program            (C)ChaN, 2021  */
 /*---------------------------------------------------------------*/
 
 
 #include <string.h>
 #include <p24FJ64GA002.h>
 #include "pic24f.h"
-#include "uart.h"
+#include "uart_pic24f.h"
 #include "xprintf.h"
 #include "diskio.h"
 #include "ff.h"
@@ -20,9 +20,6 @@ _CONFIG2(IESO_OFF & FNOSC_PRIPLL & FCKSM_CSDCMD & OSCIOFNC_OFF & IOL1WAY_OFF & I
 DWORD AccSize;			/* Work register for fs command */
 WORD AccFiles, AccDirs;
 FILINFO Finfo;
-#if _USE_LFN
-char Lfname[512];
-#endif
 
 char Line[128];			/* Console input buffer */
 
@@ -32,7 +29,7 @@ BYTE Buff[4096]  __attribute__ ((aligned(2)));		/* Working buffer */
 
 volatile UINT Timer;	/* 1kHz increment timer */
 
-volatile BYTE rtcYear = 110, rtcMon = 10, rtcMday = 15, rtcHour, rtcMin, rtcSec;
+volatile BYTE rtcYear = 121, rtcMon = 5, rtcMday = 8, rtcHour, rtcMin, rtcSec;
 
 
 
@@ -112,8 +109,7 @@ DWORD get_fattime (void)
 /* Monitor                                                                  */
 
 
-static
-void put_rc (FRESULT rc)
+static void put_rc (FRESULT rc)
 {
 	const char *str =
 		"OK\0" "DISK_ERR\0" "INT_ERR\0" "NOT_READY\0" "NO_FILE\0" "NO_PATH\0"
@@ -130,36 +126,26 @@ void put_rc (FRESULT rc)
 
 
 
-static
-FRESULT scan_files (
+static FRESULT scan_files (
 	char* path		/* Pointer to the path name working buffer */
 )
 {
 	DIR dirs;
 	FRESULT res;
 	int i;
-	char *fn;
 
 
 	if ((res = f_opendir(&dirs, path)) == FR_OK) {
 		i = strlen(path);
 		while (((res = f_readdir(&dirs, &Finfo)) == FR_OK) && Finfo.fname[0]) {
-			if (_FS_RPATH && Finfo.fname[0] == '.') continue;
-#if _USE_LFN
-			fn = *Finfo.lfname ? Finfo.lfname : Finfo.fname;
-#else
-			fn = Finfo.fname;
-#endif
 			if (Finfo.fattrib & AM_DIR) {
 				AccDirs++;
-				path[i] = '/'; strcpy(&path[i+1], fn);
+				path[i] = '/'; strcpy(&path[i+1], Finfo.fname);
 				res = scan_files(path);
 				path[i] = 0;
 				if (res != FR_OK) break;
 			} else {
-#if 0
-				xprintf("%s/%s\n", path, fn);
-#endif
+			/*	xprintf("%s/%s\n", path, Finfo.fname);	*/
 				AccFiles++;
 				AccSize += Finfo.fsize;
 			}
@@ -171,8 +157,7 @@ FRESULT scan_files (
 
 
 
-static
-void IoInit ()
+static void IoInit ()
 {
 	/* Initialize GPIO ports */
 	AD1PCFG = 0x1FFF;
@@ -200,7 +185,7 @@ void IoInit ()
 
 	_EI();
 
-	uart_init();	/* Initialize UART driver */
+	uart_init(115200);	/* Initialize UART driver */
 
 	_LATA0 = 0;		/* LED ON */
 }
@@ -228,7 +213,7 @@ int main (void)
 
 	/* Initialize OLED module */
 	disp_init();
-	xfprintf(disp_putc, "TJpgDec/FF");
+	xfprintf((void(*)(int))disp_putc, "TJpgDec/FF");
 	disp_fill(0, 49, 10, 14, C_BLUE);
 
 	xdev_in(uart_getc);	/* Join UART and console */
@@ -245,13 +230,15 @@ int main (void)
 		case 'l' :	/* l <file> - Load a file (.BMP or .JPG) */
 			while (*ptr == ' ') ptr++;
 			if (strstr(ptr, ".BMP") || strstr(ptr, ".bmp")) {
-				if (f_open(&file1, ptr, FA_READ) == FR_OK)
+				if (f_open(&file1, ptr, FA_READ) == FR_OK) {
 					load_bmp(&file1, Buff, sizeof Buff);
+				}
 				break;
 			}
 			if (strstr(ptr, ".JPG") || strstr(ptr, ".jpg")) {
-				if (f_open(&file1, ptr, FA_READ) == FR_OK)
+				if (f_open(&file1, ptr, FA_READ) == FR_OK) {
 					load_jpg(&file1, Buff, sizeof Buff);
+				}
 				break;
 			}
 			break;
@@ -264,8 +251,9 @@ int main (void)
 				if (res) { xprintf("rc=%d\n", res); break; }
 				sect = p2 + 1;
 				xprintf("Sector:%lu\n", p2);
-				for (ptr=(char*)Buff, ofs = 0; ofs < 0x200; ptr+=16, ofs+=16)
-					put_dump((BYTE*)ptr, ofs, 16, DW_CHAR);
+				for (ptr=(char*)Buff, ofs = 0; ofs < 0x200; ptr+=16, ofs+=16) {
+					put_dump((BYTE*)ptr, ofs, 16, sizeof (BYTE));
+				}
 				break;
 
 			case 'i' :	/* di - Initialize physical drive */
@@ -280,14 +268,14 @@ int main (void)
 				if (disk_ioctl(0, MMC_GET_TYPE, &b) == RES_OK)
 					{ xprintf("MMC/SDC type: %u\n", b); }
 				if (disk_ioctl(0, MMC_GET_CSD, Buff) == RES_OK)
-					{ xputs("CSD:\n"); put_dump(Buff, 0, 16, DW_CHAR); }
+					{ xputs("CSD:\n"); put_dump(Buff, 0, 16, sizeof (BYTE)); }
 				if (disk_ioctl(0, MMC_GET_CID, Buff) == RES_OK)
-					{ xputs("CID:\n"); put_dump(Buff, 0, 16, DW_CHAR); }
+					{ xputs("CID:\n"); put_dump(Buff, 0, 16, sizeof (BYTE)); }
 				if (disk_ioctl(0, MMC_GET_OCR, Buff) == RES_OK)
-					{ xputs("OCR:\n"); put_dump(Buff, 0, 4, DW_CHAR); }
+					{ xputs("OCR:\n"); put_dump(Buff, 0, 4, sizeof (BYTE)); }
 				if (disk_ioctl(0, MMC_GET_SDSTAT, Buff) == RES_OK) {
 					xputs("SD Status:\n");
-					for (s1 = 0; s1 < 64; s1 += 16) put_dump(Buff+s1, s1, 16, DW_CHAR);
+					for (s1 = 0; s1 < 64; s1 += 16) put_dump(Buff+s1, s1, 16, sizeof (BYTE));
 				}
 				break;
 			}
@@ -297,8 +285,9 @@ int main (void)
 			switch (*ptr++) {
 			case 'd' :	/* bd <addr> - Dump R/W buffer */
 				if (!xatoi(&ptr, &p1)) break;
-				for (ptr=(char*)&Buff[p1], ofs = p1, cnt = 32; cnt; cnt--, ptr+=16, ofs+=16)
-					put_dump((BYTE*)ptr, ofs, 16, DW_CHAR);
+				for (ptr=(char*)&Buff[p1], ofs = p1, cnt = 32; cnt; cnt--, ptr+=16, ofs+=16) {
+					put_dump((BYTE*)ptr, ofs, 16, sizeof (BYTE));
+				}
 				break;
 
 			case 'e' :	/* be <addr> [<data>] ... - Edit R/W buffer */
@@ -315,10 +304,11 @@ int main (void)
 					ptr = Line;
 					if (*ptr == '.') break;
 					if (*ptr < ' ') { p1++; continue; }
-					if (xatoi(&ptr, &p2))
+					if (xatoi(&ptr, &p2)) {
 						Buff[p1++] = (BYTE)p2;
-					else
+					} else {
 						xputs("???\n");
+					}
 				}
 				break;
 
@@ -346,7 +336,7 @@ int main (void)
 			switch (*ptr++) {
 
 			case 'i' :	/* fi - Force initialized the logical drive */
-				put_rc(f_mount(0, &Fatfs));
+				put_rc(f_mount(&Fatfs, "", 1));
 				break;
 
 			case 's' :	/* fs [<path>] - Show logical drive status */
@@ -398,8 +388,9 @@ int main (void)
 #endif
 				}
 				xprintf("%4u File(s),%10lu bytes total\n%4u Dir(s)", s1, p1, s2);
-				if (f_getfree(ptr, (DWORD*)&p1, &fs) == FR_OK)
+				if (f_getfree(ptr, (DWORD*)&p1, &fs) == FR_OK) {
 					xprintf(", %10lu bytes free\n", p1 * fs->csize * 512);
+				}
 				break;
 
 			case 'o' :	/* fo <mode> <file> - Open a file */
@@ -416,8 +407,9 @@ int main (void)
 				if (!xatoi(&ptr, &p1)) break;
 				res = f_lseek(&file1, p1);
 				put_rc(res);
-				if (res == FR_OK)
+				if (res == FR_OK) {
 					xprintf("fptr = %lu(0x%lX)\n", file1.fptr, file1.fptr);
+				}
 				break;
 
 			case 'r' :	/* fr <len> - read file */
@@ -447,7 +439,7 @@ int main (void)
 					res = f_read(&file1, Buff, cnt, &cnt);
 					if (res != FR_OK) { put_rc(res); break; }
 					if (!cnt) break;
-					put_dump(Buff, ofs, cnt, DW_CHAR);
+					put_dump(Buff, ofs, cnt, sizeof (BYTE));
 					ofs += 16;
 				}
 				break;
@@ -493,7 +485,7 @@ int main (void)
 				while (*ptr == ' ') ptr++;
 				put_rc(f_mkdir(ptr));
 				break;
-
+#if FF_USE_CHMOD
 			case 'a' :	/* fa <atrr> <mask> <name> - Change file/dir attribute */
 				if (!xatoi(&ptr, &p1) || !xatoi(&ptr, &p2)) break;
 				while (*ptr == ' ') ptr++;
@@ -507,7 +499,7 @@ int main (void)
 				Finfo.ftime = (WORD)(((p1 & 31) << 11) | ((p1 & 63) << 5) | ((p1 >> 1) & 31));
 				put_rc(f_utime(ptr, &Finfo));
 				break;
-
+#endif
 			case 'x' : /* fx <src_name> <dst_name> - Copy file */
 				while (*ptr == ' ') ptr++;
 				ptr2 = strchr(ptr, ' ');
@@ -542,18 +534,13 @@ int main (void)
 				f_close(&file1);
 				f_close(&file2);
 				break;
-#if _FS_RPATH >= 1
+#if FF_FS_RPATH >= 1
 			case 'g' :	/* fg <path> - Change current directory */
 				while (*ptr == ' ') ptr++;
 				put_rc(f_chdir(ptr));
 				break;
 
-			case 'j' :	/* fj <drive#> - Change current drive */
-				if (xatoi(&ptr, &p1)) {
-					put_rc(f_chdrive((BYTE)p1));
-				}
-				break;
-#if _FS_RPATH >= 2
+#if FF_FS_RPATH >= 2
 			case 'q' :	/* fq - Show current dir path */
 				res = f_getcwd(Line, sizeof Line);
 				if (res)
@@ -563,7 +550,7 @@ int main (void)
 				break;
 #endif
 #endif
-#if _USE_MKFS
+#if FF_USE_MKFS
 			case 'm' :	/* fm <partition rule> <sect/clust> - Create file system */
 				if (!xatoi(&ptr, &p2) || !xatoi(&ptr, &p3)) break;
 				xprintf("The memory card will be formatted. Are you sure? (Y/n)=", p1);

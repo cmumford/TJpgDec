@@ -5,8 +5,8 @@ device=PIC24FJ64GA002
 [PATH_INFO]
 BuildDirPolicy=BuildDirIsProjectDir
 dir_src=
-dir_bin=
-dir_tmp=
+dir_bin=obj
+dir_tmp=obj
 dir_sin=
 dir_inc=
 dir_lib=C:\Program Files\Microchip\MPLAB C30\lib
@@ -74,34 +74,27 @@ file_014=no
 [FILE_INFO]
 file_000=ff.c
 file_001=main.c
-file_002=mmc.c
-file_003=uart.c
-file_004=xprintf.c
-file_005=disp.c
-file_006=tjpgd.c
-file_007=font.c
+file_002=xprintf.c
+file_003=disp.c
+file_004=tjpgd.c
+file_005=font.c
+file_006=mmc_pic24f.c
+file_007=uart_pic24f.c
 file_008=diskio.h
 file_009=ff.h
-file_010=integer.h
-file_011=pic24f.h
-file_012=ffconf.h
-file_013=uart.h
-file_014=disp.h
+file_010=pic24f.h
+file_011=ffconf.h
+file_012=disp.h
+file_013=uart_pic24f.h
+file_014=xprintf.h
 [SUITE_INFO]
 suite_guid={479DDE59-4D56-455E-855E-FFF59A3DB57E}
 suite_state=
 [TOOL_SETTINGS]
 TS{7D9C6ECE-785D-44CB-BA22-17BF2E119622}=-g
-TS{25AC22BD-2378-4FDB-BFB6-7345A15512D3}=-g -ansi -Wall -pedantic -Os
+TS{25AC22BD-2378-4FDB-BFB6-7345A15512D3}=-g -Wall -Os
 TS{7DAC9A1D-4C45-45D6-B25A-D117C74E8F5A}=-o"$(BINDIR_)$(TARGETBASE).$(TARGETSUFFIX)" -Map="$(BINDIR_)$(TARGETBASE).map" --report-mem
 TS{509E5861-1E2A-483B-8B6B-CA8DB7F2DD78}=
-TS{7D9C6ECE-785D-44CB-BA22-17BF2E119622}002=-g
-TS{25AC22BD-2378-4FDB-BFB6-7345A15512D3}002=-g -Wall -pedantic -O1
-TS{25AC22BD-2378-4FDB-BFB6-7345A15512D3}002_alt=yes
-TS{7DAC9A1D-4C45-45D6-B25A-D117C74E8F5A}002=-o"$(BINDIR_)$(TARGETBASE).$(TARGETSUFFIX)" -Map="$(BINDIR_)$(TARGETBASE).map" --report-mem
-TS{509E5861-1E2A-483B-8B6B-CA8DB7F2DD78}002=
-[ACTIVE_FILE_SETTINGS]
-TS{25AC22BD-2378-4FDB-BFB6-7345A15512D3}002_active=yes
 [INSTRUMENTED_TRACE]
 enable=0
 transport=0

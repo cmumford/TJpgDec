@@ -524,7 +524,7 @@ void disp_putc (
 		switch (chr) {
 		case '\n':	/* LF */
 			LocY += pgm_read_byte(&fnt[15]);
-			/* follow next case */
+			/* FALLTHROUGH */
 		case '\r':	/* CR */
 			LocX = 0;
 			return;
