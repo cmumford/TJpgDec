@@ -24,7 +24,7 @@ struct IODEV {
  *
  * @return number of bytes read (zero on error).
  */
-unsigned int input_func(JDEC* jd, uint8_t* buff, unsigned int ndata) {
+size_t input_func(JDEC* jd, uint8_t* buff, size_t ndata) {
   IODEV* dev = static_cast<IODEV*>(jd->device);
 
   const size_t bytes_left = dev->input_data_size - dev->pos;
@@ -36,7 +36,7 @@ unsigned int input_func(JDEC* jd, uint8_t* buff, unsigned int ndata) {
     std::memcpy(buff, dev->input_data + dev->pos, to_read);
 
   dev->pos += to_read;
-  return static_cast<unsigned int>(to_read);
+  return to_read;
 }
 
 /**
@@ -55,7 +55,7 @@ int output_func(JDEC* jd, void* bitmap, JRECT* rect) {
 }  // namespace
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  constexpr unsigned int kWorkBufferSize = 4096;
+  constexpr size_t kWorkBufferSize = 4096;
   constexpr uint8_t SCALE = 0;
 
   uint8_t work_buffer[kWorkBufferSize];
