@@ -52,7 +52,7 @@ struct JDEC {
 	size_t dctr;				/* Number of bytes available in the input buffer */
 	uint8_t* dptr;				/* Current data read ptr */
 	uint8_t* inbuf;				/* Bit stream input buffer */
-	uint8_t dmsk;				/* Current bit in the current read byte */
+	uint8_t dbit;				/* Number of bits availavble in reading byte */
 	uint8_t scale;				/* Output scaling ratio */
 	uint8_t msx, msy;			/* MCU size in unit of block (width, height) */
 	uint8_t qtid[3];			/* Quantization table ID of each component, Y, Cb, Cr */
