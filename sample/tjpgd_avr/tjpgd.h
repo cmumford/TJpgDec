@@ -64,6 +64,7 @@ struct JDEC {
 	uint16_t width, height;		/* Size of the input image (pixel) */
 	uint8_t* huffbits[2][2];	/* Huffman bit distribution tables [id][dcac] */
 	uint16_t* huffcode[2][2];	/* Huffman code word tables [id][dcac] */
+	uint16_t huffcode_len[2][2];	/* Huffman code word tables length */
 	uint8_t* huffdata[2][2];	/* Huffman decoded data tables [id][dcac] */
 	int32_t* qttbl[4];			/* Dequantizer tables [id] */
 	void* workbuf;				/* Working buffer for IDCT and RGB output */
