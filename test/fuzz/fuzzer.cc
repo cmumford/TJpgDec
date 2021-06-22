@@ -3,6 +3,10 @@
 
 #include <tjpgd.h>
 
+#include "lvgl.h"
+
+LV_IMG_DECLARE( wallpaper_jpg );
+
 namespace {
 
 /* User defined session identifier */
@@ -60,7 +64,14 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 
   uint8_t work_buffer[kWorkBufferSize];
   JDEC decompressor;
+
+#if 1
+  // Fuzz wallpaper
+  IODEV iodev(wallpaper_jpg.data, wallpaper_jpg.data_size);
+#else
+  // Do the actual fuzzer test.
   IODEV iodev(data, size);
+#endif
 
   JRESULT rc = jd_prepare(&decompressor, input_func, work_buffer,
                           kWorkBufferSize, &iodev);

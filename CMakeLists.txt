@@ -57,6 +57,7 @@ if (JPEG_FUZZING)
 
 add_executable(fuzzer
   "test/fuzz/fuzzer.cc"
+  "test/fuzz/wallpaper_jpg.cc"
   "src/tjpgd.h"
 )
 target_link_libraries(fuzzer
