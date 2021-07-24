@@ -20,9 +20,25 @@ jobs:
           EC_FIX_ERROR: false
 
   build:
+    name: Build
     runs-on: ubuntu-latest
     env:
       buildDir: '${{ github.workspace }}/build'
+    steps:
+    - name: Get source
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: Build
+      uses: lukka/run-cmake@v3
+      with:
+        buildDirectory: ${{ env.buildDir }}
+
+  fuzz:
+    name: Fuzzer
+    runs-on: ubuntu-latest
+    env:
+      buildDir: '${{ github.workspace }}/build-fuzz'
     steps:
     - name: Get source
       uses: actions/checkout@v2
