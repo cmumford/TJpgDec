@@ -20,6 +20,7 @@ jobs:
           EC_FIX_ERROR: false
 
   build:
+    runs-on: ubuntu-latest
     env:
       buildDir: '${{ github.workspace }}/build'
     steps:
