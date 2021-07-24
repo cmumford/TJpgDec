@@ -19,7 +19,7 @@ JRESULT jd_prepare (
   size_t (*<em>infunc</em>)(JDEC*, uint8_t*, size_t), <span class="c">/* Pointer to input function */</span>
   void* <em>work</em>,        <span class="c">/* Pointer to the work area */</span>
   size_t <em>sz_work</em>,    <span class="c">/* Size of the work area */</span>
-  void* <em>device</em>       <span class="c">/* Device identifier for the session */</span>
+  void* <em>device</em>       <span class="c">/* Session identifier for the session */</span>
 );
 </pre>
 </div>
@@ -36,7 +36,7 @@ JRESULT jd_prepare (
 <dt>sz_work</dt>
 <dd>Size of the work area in unit of byte. TJpgDec requires upto 3092 bytes of work area depends on the built-in parameter tables of the JPEG image to deccompress.</dd>
 <dt>device</dt>
-<dd>Pointer to the user defined device identifier for this session. It is stored to the member <tt>device</tt> in the decompression object. It can be refered by I/O functions to identify the corresponding session. When I/O device is fixed in the project or this feature is not needed, set null and do not care about this.</dd>
+<dd>Pointer to the user defined session identifier for this session. It is stored to the member <tt>device</tt> in the decompression object. It can be refered by I/O functions to identify the corresponding session. If this feature is not needed, set null and do not care about this.</dd>
 </dl>
 </div>
 

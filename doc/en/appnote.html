@@ -15,6 +15,7 @@
 <li><a href="#use">How to Use</a></li>
 <li><a href="#limits">Limits</a></li>
 <li><a href="#memory">Memory Usage</a></li>
+<li><a href="#opt">Options</a></li>
 <li><a href="#license">About TJpgDec License</a></li>
 </ol>
 <hr>
@@ -117,7 +118,7 @@ int main (int argc, char* argv[])
     JRESULT res;      <span class="c">/* Result code of TJpgDec API */</span>
     JDEC jdec;        <span class="c">/* Decompression object */</span>
     void *work;       <span class="c">/* Pointer to the work area */</span>
-    size_t sz_work = 3100; <span class="c">/* Size of work area */</span>
+    size_t sz_work = 3500; <span class="c">/* Size of work area */</span>
     IODEV devid;      <span class="c">/* Session identifier */</span>
 
 
@@ -128,7 +129,7 @@ int main (int argc, char* argv[])
 
     <span class="c">/* Prepare to decompress */</span>
     work = (void*)malloc(sz_work);
-    res = jd_prepare(&amp;jdec, in_func, work, sz_work, &amp;devid);
+    res = <span class="b">jd_prepare</span>(&amp;jdec, in_func, work, sz_work, &amp;devid);
     <span class="k">if</span> (res == JDR_OK) {
         <span class="c">/* It is ready to dcompress and image info is available here */</span>
         printf("Image size is %u x %u.\n%u bytes of work ares is used.\n", jdec.width, jdec.height, sz_work - jdec.sz_pool);
@@ -137,7 +138,7 @@ int main (int argc, char* argv[])
         devid.fbuf = (uint8_t*)malloc(3 * jdec.width * jdec.height); <span class="c">/* Create frame buffer for output image (assuming RGB888 cfg) */</span>
         devid.wfbuf = jdec.width;
 
-        res = jd_decomp(&amp;jdec, out_func, 0);   <span class="c">/* Start to decompress with 1/1 scaling */</span>
+        res = <span class="b">jd_decomp</span>(&amp;jdec, out_func, 0);   <span class="c">/* Start to decompress with 1/1 scaling */</span>
         <span class="k">if</span> (res == JDR_OK) {
             <span class="c">/* Decompression succeeded. You have the decompressed image in the frame buffer here. */</span>
             printf("\rDecompression succeeded.\n");
@@ -180,7 +181,25 @@ int main (int argc, char* argv[])
 <tr><td>Compiler</td><td>GCC</td><td>C30</td><td>GCC</td><td>MSC</td></tr>
 <tr class="lst3"><td>text+const</td><td>6.1k</td><td>5.1k</td><td>3.1k</td><td>3.7k</td></tr>
 </table>
-<p>TJpgDec requires a work area upto 3100 bytes for most JPEG images. It exactly depends on what parameter has been used to create the JPEG image. The 3100 bytes is the maximum memory requirement at default input buffer configuration (<tt>JD_SZBUF == 512</tt>) and it varies by <tt>JD_SZBUF</tt>. The <tt>JD_SZBUF</tt> defines how many bytes read from input stream at a time. TJpgDec alignes each read request to the buffer size, so that 512, 1024, 2048... byte is ideal to read data from the storage device.</p>
+<p>TJpgDec requires a work area upto 3100 bytes for most JPEG images. It exactly depends on what parameter has been used to create the JPEG image to be decompressed. The 3100 bytes is the maximum memory requirement in default configuration and it varies depends on <tt>JD_SZBUF</tt> and <tt>JD_FASTDECODE</tt>.</p>
+</div>
+
+
+<div class="para" id="opt">
+<h3>Options</h3>
+<p>TJpgDec has some configuration options on output format, performance and memory usage. These options are in <tt>tjpgdcnf.h</tt>.</p>
+<dl>
+<dt>JD_SZBUF</dt>
+<dd>This option speficies how many bytes read from input stream at a time. TJpgDec alignes each read request to the buffer size, so that 512, 1024, 2048... byte is ideal to read data from the storage device.</dd>
+<dt>JD_FORMAT</dt>
+<dd>This option speficies the output pixel format. 0: RGB888, 1: RGB565 or 2: Grayscale.</dd>
+<dt>JD_USE_SCALE</dt>
+<dd>This option switches output scaling feature. When enabled (1), the output image can be descaled on decompression. The descaling ratio is specified in <tt>jd_decomp</tt> function.</dd>
+<dt>JD_FASTDECODE</dt>
+<dd><img class="rset" src="opt.png" width="512" height="264" alt="">This option switches the decompression algorithm. How this option improves the performance is highly depends on the processor architectre shown in right image. The Lv.0 is the basic optimization in minimal memory usage suitable for 8/16-bit processors. The Lv.1 depends on 32-bit barrel shifter suitable for 32-bit processors. It requires additional 320 bytes of work area. The Lv.2 enables the table conversion for huffman decoding. It requires additional <tt>6 &lt;&lt; HUFF_BITS</tt>, 6144 by default, bytes of work area.</dd>
+<dt>JD_TBLCLIP</dt>
+<dd>This option switches to use table conversion for saturation alithmetics. It requires 1024 bytes of code size.</dd>
+</dl>
 </div>
 
 

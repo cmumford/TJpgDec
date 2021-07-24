@@ -16,7 +16,7 @@
 <pre>
 <span class="k">typedef</span> <span class="k">struct</span> JDEC JDEC;
 <span class="k">struct</span> JDEC {
-    unsigned int dctr;           <span class="c">/* Number of bytes available in the input buffer */</span>
+    size_t dctr;                 <span class="c">/* Number of bytes available in the input buffer */</span>
     uint8_t* dptr;               <span class="c">/* Current data read ptr */</span>
     uint8_t* inbuf;              <span class="c">/* Bit stream input buffer */</span>
     uint8_t dmsk;                <span class="c">/* Current bit in the current read byte */</span>

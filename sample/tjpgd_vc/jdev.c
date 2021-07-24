@@ -23,7 +23,6 @@
 #define SCALE	0	/* Output scaling 0:1/1, 1:1/2, 2:1/4 or 3:1/8 */
 
 
-
 /*---------------------------------*/
 /* User defined session identifier */
 /*---------------------------------*/
@@ -52,7 +51,7 @@ size_t input_func (	/* Returns number of bytes read (zero on error) */
 
 	if (buff) {	/* Read bytes from input stream */
 		ReadFile(dev->hin, buff, ndata, &rb, 0);
-		return (unsigned int)rb;
+		return (size_t)rb;
 	} else {	/* Remove bytes from input stream */
 		rb = SetFilePointer(dev->hin, ndata, 0, FILE_CURRENT);
 		return rb == 0xFFFFFFFF ? 0 : ndata;
@@ -171,7 +170,7 @@ void write_bmp (
 
 JRESULT jpegtest (char* fname)
 {
-	const size_t sz_work = 4096;	/* Size of working buffer for TJpgDec module */
+	const size_t sz_work = 32768;	/* Size of working buffer for TJpgDec module */
 	void *jdwork;	/* Pointer to TJpgDec work area */
 	JDEC jd;		/* TJpgDec decompression object */
 	IODEV iodev;	/* Identifier of the decompression session (depends on application) */
@@ -183,17 +182,18 @@ JRESULT jpegtest (char* fname)
 	printf("%s", fname);	/* Put file name */
 
 	/* Open JPEG file */
-	iodev.hin = CreateFile(fname, GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+	iodev.hin = CreateFile(fname, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
 	if (iodev.hin != INVALID_HANDLE_VALUE) {
 
 		jdwork = VirtualAlloc(0, sz_work, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);	/* Allocate a work area for TJpgDec */
 
 		/* Prepare to decompress the JPEG image */
-		rc = jd_prepare(&jd, input_func, jdwork, (unsigned int)sz_work, &iodev);
+		rc = jd_prepare(&jd, input_func, jdwork, sz_work, &iodev);
 
 		if (rc == JDR_OK) {
 			printf(",%u,%u", jd.width, jd.height);	/* Image dimensions */
 			printf(",%s", jd.ncomp == 1 ? "4:0:0" : jd.msx == 1 ? "4:4:4" : jd.msy == 1 ? "4:2:2" : "4:2:0");	/* Sampling ratio */
+			printf(",%u", jd.nrst);					/* Restart interval */
 			printf(",%u", sz_work - jd.sz_pool);	/* Used memory size */
 
 			/* Initialize frame buffer */
@@ -239,15 +239,15 @@ int main (int argc, char* argv[])
 
 	if (argc == 2) {
 		SetCurrentDirectory(argv[1]);
-		printf("FileName,Width,Height,Sampling,UsedMemory,Result\n");
+		printf("FileName,Width,Height,Sampling,Restart,UsedMemory,Result\n");
 	} else {
 		printf("Usage: jdev <directory>\n");
 		return 1;
 	}
-	QueryPerformanceCounter(&tmr_s);
 
 	fd = FindFirstFile("*.jpg", &ff);	/* Process all .jpg files in the dir */
 	if (fd != INVALID_HANDLE_VALUE) {
+		QueryPerformanceCounter(&tmr_s);
 		do {
 			if (ff.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
 			if (jpegtest(ff.cFileName) == JDR_OK) {
@@ -256,18 +256,15 @@ int main (int argc, char* argv[])
 				fail++;
 			}
 		} while (FindNextFile(fd, &ff));
+		QueryPerformanceCounter(&tmr_e);
+		QueryPerformanceFrequency(&freq);
 		FindClose(fd);
+		printf("\n");
+		printf("%f seconds\n", (double)(tmr_e.QuadPart - tmr_s.QuadPart) / freq.QuadPart);
 	}
-	QueryPerformanceCounter(&tmr_e);
-	QueryPerformanceFrequency(&freq);
 
-	printf("\n");
-	printf("%f seconds\n", (double)(tmr_e.QuadPart - tmr_s.QuadPart) / freq.QuadPart);
 	printf("%d succeeded, %d failed.\n", ok, fail);
 	printf("Type enter..."); getchar();
 	return 0;
 }
-
-
-
 

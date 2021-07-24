@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------/
-/ TJpgDec - Tiny JPEG Decompressor include file               (C)ChaN, 2021
+/ TJpgDec - Tiny JPEG Decompressor R0.03 include file         (C)ChaN, 2021
 /----------------------------------------------------------------------------*/
 #ifndef DEF_TJPGDEC
 #define DEF_TJPGDEC
@@ -11,7 +11,7 @@ extern "C" {
 #include "tjpgdcnf.h"
 #include <string.h>
 
-#if defined(_WIN32)	/* Main development platform */
+#if defined(_WIN32)	/* VC++ or some compiler without stdint.h */
 typedef unsigned char	uint8_t;
 typedef unsigned short	uint16_t;
 typedef short			int16_t;
@@ -21,6 +21,13 @@ typedef long			int32_t;
 #include <stdint.h>
 #endif
 
+#if JD_FASTDECODE >= 1
+typedef int16_t jd_yuv_t;
+#else
+typedef uint8_t jd_yuv_t;
+#endif
+
+
 /* Error code */
 typedef enum {
 	JDR_OK = 0,	/* 0: Succeeded */
@@ -29,7 +36,7 @@ typedef enum {
 	JDR_MEM1,	/* 3: Insufficient memory pool for the image */
 	JDR_MEM2,	/* 4: Insufficient stream input buffer */
 	JDR_PAR,	/* 5: Parameter error */
-	JDR_FMT1,	/* 6: Data format error (may be damaged data) */
+	JDR_FMT1,	/* 6: Data format error (may be broken data) */
 	JDR_FMT2,	/* 7: Right format but not supported */
 	JDR_FMT3	/* 8: Not supported JPEG standard */
 } JRESULT;
@@ -52,7 +59,7 @@ struct JDEC {
 	size_t dctr;				/* Number of bytes available in the input buffer */
 	uint8_t* dptr;				/* Current data read ptr */
 	uint8_t* inbuf;				/* Bit stream input buffer */
-	uint8_t dbit;				/* Number of bits availavble in reading byte */
+	uint8_t dbit;				/* Number of bits availavble in wreg or reading bit mask */
 	uint8_t scale;				/* Output scaling ratio */
 	uint8_t msx, msy;			/* MCU size in unit of block (width, height) */
 	uint8_t qtid[3];			/* Quantization table ID of each component, Y, Cb, Cr */
@@ -65,8 +72,17 @@ struct JDEC {
 	uint16_t huffcode_len[2][2];	/* Huffman code word tables length */
 	uint8_t* huffdata[2][2];	/* Huffman decoded data tables [id][dcac] */
 	int32_t* qttbl[4];			/* Dequantizer tables [id] */
+#if JD_FASTDECODE >= 1
+	uint32_t wreg;				/* Working shift register */
+	uint8_t marker;				/* Detected marker (0:None) */
+#if JD_FASTDECODE == 2
+	uint8_t longofs[2][2];		/* Table offset of long code [id][dcac] */
+	uint16_t* hufflut_ac[2];	/* Fast huffman decode tables for AC short code [id] */
+	uint8_t* hufflut_dc[2];		/* Fast huffman decode tables for DC short code [id] */
+#endif
+#endif
 	void* workbuf;				/* Working buffer for IDCT and RGB output */
-	uint8_t* mcubuf;			/* Working buffer for the MCU */
+	jd_yuv_t* mcubuf;			/* Working buffer for the MCU */
 	void* pool;					/* Pointer to available memory pool */
 	size_t sz_pool;				/* Size of momory pool (bytes available) */
 	size_t (*infunc)(JDEC*, uint8_t*, size_t);	/* Pointer to jpeg stream input function */
