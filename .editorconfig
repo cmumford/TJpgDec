@@ -1,5 +1,13 @@
 root = true
 
+[*.editorconfig]
+end_of_line = lf
+insert_final_newline = true
+
+[*.gitattributes]
+end_of_line = lf
+insert_final_newline = true
+
 [*]
 end_of_line = crlf
 insert_final_newline = true
