@@ -28,6 +28,6 @@ jobs:
       with:
         submodules: recursive
     - name: Build
-        uses: lukka/run-cmake@v3
-        with:
-          buildDirectory: ${{ env.buildDir }}
+      uses: lukka/run-cmake@v3
+      with:
+        buildDirectory: ${{ env.buildDir }}
