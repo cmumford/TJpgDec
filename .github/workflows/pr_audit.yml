@@ -1,28 +1,33 @@
-name: PR Audit
+name: Pull CI
 on: pull_request
 
 jobs:
   textformat:
     name: EditorConfig audit
     runs-on: ubuntu-latest
-
+    env:
+      ALWAYS_LINT_ALL_FILES: false
+      EC_FIX_ERROR: false
     steps:
-      - name: CheckoutCode
+      - name: Checkout code
         uses: actions/checkout@v2
         with:
-          # 0: fetch all history for all tags/branches.
-          # EditorConfig/Action needs all history in order to determine changed
-          # files to support ALWAYS_LINT_ALL_FILES: false.
           fetch-depth: 0
-
-      # Verify changed files conform to .editorconfig
       - name: EditorConfig-Action
         uses: zbeekman/EditorConfig-Action@master
         env:
-          # Only lint files changed in the pull request.
           ALWAYS_LINT_ALL_FILES: false
-
-          # Automatic error fixing not yet supported by EditorConfig-Action.
-          # Forced off to avoid unintentionally enabling when upgrading to
-          # new version.
           EC_FIX_ERROR: false
+
+  build:
+    env:
+      buildDir: '${{ github.workspace }}/build'
+    steps:
+    - name: Get source
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: Build
+        uses: lukka/run-cmake@v3
+        with:
+          buildDirectory: ${{ env.buildDir }}

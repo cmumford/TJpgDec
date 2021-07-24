@@ -1,7 +1,7 @@
 # TJpgDec
 Tiny JPEG Decompressor
 
-[![Build Status](https://travis-ci.com/cmumford/TJpgDec.svg?branch=master)](https://travis-ci.com/cmumford/TJpgDec)
+![Status](https://github.com/BigMumf/display-keyboard/actions/workflows/push_audit.yml/badge.svg)
 
 This project is a mirror of the [TJpgDec project](http://elm-chan.org/fsw/tjpgd/00index.html).
 
