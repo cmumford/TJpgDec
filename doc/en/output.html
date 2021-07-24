@@ -48,9 +48,9 @@ int out_func (
 <p>The output pixel format is defined by <tt>JD_FORMAT</tt> option in the <tt>tjpgdcnf.h</tt> as shown below.</p>
 <table class="lst">
 <tr><th><tt>JD_FORMAT</tt></th><th>Pixel Format</th></tr>
-<tr><td>0 (RGB888)</td><td><tt>uint8_t[]: {R1, G1, B1, R2, G2, B2, ....</tt></td></tr>
-<tr><td>1 (RGB565)</td><td><tt>uint16_t[]: {rrrrrggggggbbbbb, ....</tt></td></tr>
-<tr><td>2 (Grayscale)</td><td><tt>uint8_t[]: {Y1, Y2, Y3, ....</tt></td></tr>
+<tr><td>0 (RGB888)</td><td><tt>uint8_t bitmap[] = {R1, G1, B1, R2, G2, B2, ....</tt></td></tr>
+<tr><td>1 (RGB565)</td><td><tt>uint16_t bitmap[] = {rrrrrggggggbbbbb, ....</tt></td></tr>
+<tr><td>2 (Grayscale)</td><td><tt>uint8_t bitmap[] = {Y1, Y2, Y3, ....</tt></td></tr>
 </table>
 </div>
 
