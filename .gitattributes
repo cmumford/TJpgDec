@@ -15,3 +15,7 @@ Makefile text eol=crlf
 # Known binary file types.
 *.jpeg binary
 *.jpg binary
+*.fnt binary
+*.FNT binary
+*.suo binary
+*.mcw binary
