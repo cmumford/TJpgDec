@@ -9,8 +9,11 @@ The "upstream" branch is a clean copy of the source and sample files
 from the official project page listed above with **no modifications**
 whatsoever.
 
-The default branch ("master") has added build (cmake) files to facilitate
-testing.
+The default branch ("master") has the following changes:
+1. Fuzzer test to detect memory access errors.
+2. Changes to fix all detected memory access errors.
+3. build (cmake) files.
+4. GitHub workflows for continuous integration.
 
 ## Building
 
