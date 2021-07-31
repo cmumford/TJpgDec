@@ -1,10 +1,18 @@
 root = true
 
-[*.editorconfig]
+[*.yml]
 end_of_line = lf
 insert_final_newline = true
 
-[*.gitattributes]
+[.editorconfig]
+end_of_line = lf
+insert_final_newline = true
+
+[.gitattributes]
+end_of_line = lf
+insert_final_newline = true
+
+[.gitignore]
 end_of_line = lf
 insert_final_newline = true
 
